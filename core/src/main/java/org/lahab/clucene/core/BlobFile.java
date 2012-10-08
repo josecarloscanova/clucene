@@ -23,6 +23,7 @@ package org.lahab.clucene.core;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 
 import org.lahab.clucene.core.cache.Cache;
 
@@ -59,20 +60,24 @@ public abstract class BlobFile implements Serializable {
 	abstract public void seek(long pos) throws IOException;
 	
 	protected int read(byte[] b, int offset, int size) throws IOException {
-		Object obj = cache.get(Integer.valueOf(offset));
-		b = null;
+		Object obj = cache.get(Long.valueOf(position));
+		int nb = 0;
 		if (obj != null) {
 			byte[] data = (byte[])obj;
 			if (data.length <= size) {
-				b = data;
+				for(int i = 0; i < size; i++) {
+					b[offset + i] = data[i];
+				}
+				nb = size;
+			} else {
+				nb = readFile(b, offset, size);
 			}
 		}
-		if (b == null) {
-			b = new byte[size];
-			readFile(b, offset, size);
-			cache.add(Integer.valueOf(offset), b);
-		}
-		return size;	
+		if (nb == 0) {
+			nb = readFile(b, offset, size);
+			cache.add(Integer.valueOf(offset), Arrays.copyOfRange(b, offset, b.length - 1));
+		}	 
+		return nb;	
 	}
 	
 	abstract protected int readFile(byte[] b, int offset, int size) throws IOException;
