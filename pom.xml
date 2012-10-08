@@ -5,9 +5,27 @@
   <groupId>com.lahab.clucene</groupId>
   <artifactId>clucene</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-
+  <licenses>
+      <license>
+          <name>The Apache Software License, Version 2.0</name>
+          <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+          <distribution>repo</distribution>
+      </license>
+  </licenses>
   <name>clucene</name>
   <url>http://maven.apache.org</url>
+  <inceptionYear>2012</inceptionYear>
+  <developers>
+  	<developer>
+  		<name>lahabana (Charly Molter)</name>
+  		<email>charly.molter@gmail.com</email>
+  		<organization>NTNU</organization>
+  	</developer>
+  </developers>
+  <organization>
+		<name>NTNU</name>
+		<url>http://www.ntnu.no</url>
+	</organization>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -58,7 +76,24 @@
 	        <source>1.6</source>
 	        <target>1.6</target>
 	      </configuration>
-	    </plugin>
+	    </plugin>  
+			<plugin>
+				<inherited>true</inherited>
+		    <groupId>org.codehaus.mojo</groupId>
+		    <artifactId>license-maven-plugin</artifactId>
+		    <configuration>
+		        <licenseName>apache_v2</licenseName>
+		    </configuration>
+		    <executions>
+		        <execution>
+		            <id>first</id>
+		            <goals>
+		                <goal>update-file-header</goal>
+		            </goals>
+		            <phase>process-sources</phase>
+		        </execution>
+		    </executions>
+			</plugin> 
 	  </plugins>
 	</build>
 </project>

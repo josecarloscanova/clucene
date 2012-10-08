@@ -7,6 +7,13 @@
     <groupId>com.lahab.clucene</groupId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
+  <licenses>
+    <license>
+        <name>The Apache Software License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        <distribution>repo</distribution>
+    </license>
+  </licenses>
   <groupId>com.lahab.clucene</groupId>
   <artifactId>client</artifactId>
   <version>0.0.1-SNAPSHOT</version>
