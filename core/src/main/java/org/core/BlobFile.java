@@ -27,8 +27,6 @@ public abstract class BlobFile implements Serializable {
 	long length;
 	String name;
 	
-	
-	
 	public BlobFile(BlobDirectory blob, String name, Cache cache) throws IOException {
 		assert cache != null : "You must give a non null cache";
 		this.cache = cache;

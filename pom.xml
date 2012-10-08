@@ -7,7 +7,7 @@
   <version>0.0.1-SNAPSHOT</version>
 
   <name>clucene</name>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/lahabana/clucene</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
