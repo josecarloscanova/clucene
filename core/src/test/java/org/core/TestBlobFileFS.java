@@ -70,6 +70,6 @@ public class TestBlobFileFS {
 		//fail("Not yet implemented");
 	}
 
-	public static @DataPoints String[] fileNames = {"construct", "empty", "nonExistant"};
+	public static @DataPoints String[] fileNames = {"construct", "empty"};
 	public static @DataPoints byte[] datas = { 1, 2};//"construct", "empty", "nonExistant"};
 }
