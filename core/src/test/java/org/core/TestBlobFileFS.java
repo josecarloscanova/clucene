@@ -6,27 +6,35 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import org.apache.commons.io.FileUtils;
 import org.core.BlobDirectory;
 import org.core.BlobDirectoryFS;
 import org.core.BlobFileFS;
 import org.core.cache.DummyCache;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
 
 @RunWith(Theories.class)
 public class TestBlobFileFS {
 
+	@Rule  
+	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Theory
 	public void testBlobFileFS(String fileName) throws IOException {
-		BlobDirectory dir = new BlobDirectoryFS("test_files/blobFileFS", null);
+		
+		File file = folder.newFile(fileName);
+		FileUtils.writeStringToFile(file, "lfezlfelpzlfpezpfpzelfepzlpfezl"); 
+		BlobDirectory dir = new BlobDirectoryFS(folder.getRoot().getCanonicalPath(), null);
 		BlobFileFS f = new BlobFileFS(dir, fileName, new DummyCache());
 		assertEquals("Size should be equal", f.length, 
-					 new File("test_files/blobFileFS/" + fileName).length());
+					 folder.newFile(fileName).length());
 		assertEquals("We should be at the begining of the document", 0, f.position);
 		if (fileName == "nonExistant") {
 			f.delete();
