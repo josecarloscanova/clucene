@@ -20,48 +20,9 @@ package org.lahab.clucene.client;
  * #L%
  */
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.ScoreDoc;
-import org.mortbay.jetty.handler.AbstractHandler;
-
-public class SearchHandler extends AbstractHandler {
+public class SearchHandler {
 
 	protected SearchNode _node;
 	
-	@Override
-	public void handle(String target, HttpServletRequest request,
-			HttpServletResponse response, int arg) throws IOException, ServletException {
-        response.setContentType("text/html;charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
-        //baseRequest.setHandled(true);
-        if (request.getMethod() == "GET") {
-        	try {
-        		System.out.println(request.getParameter("q"));
-				ScoreDoc[] hits = _node.search(request.getParameter("q"));
-			    // 4. display results
-				response.getWriter().println("Found " + hits.length + " hits.");
-			    for(int i=0;i<hits.length;++i) {
-			      int docId = hits[i].doc;
-			      Document d = _node.doc(docId);
-			      response.getWriter().println((i + 1) + ". " + d.get("title"));
-			    }
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-        } else {
-        	response.getWriter().println("<h1>Hello World</h1>");
-        }
-	}
-	
-	public void setNode(SearchNode node) {
-		_node = node;
-	}
-
 }
 

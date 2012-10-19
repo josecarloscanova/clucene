@@ -14,7 +14,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
-import org.mortbay.jetty.Server;
 
 /*
  * #%L
@@ -42,7 +41,7 @@ import org.mortbay.jetty.Server;
  */
 public class SearchNode 
 {
-	
+/*	
 	protected IndexReader _index;
 	protected IndexSearcher _searcher;
 	protected Server _server;
@@ -92,5 +91,5 @@ public class SearchNode
 	
 	public Document doc(int docId) throws CorruptIndexException, IOException {
 		return _searcher.doc(docId);
-	}    
+	}    */
 }
