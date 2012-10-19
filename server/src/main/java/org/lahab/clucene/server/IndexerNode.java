@@ -23,7 +23,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
-import org.codehaus.jackson.JsonParser;
 import org.lahab.clucene.core.BlobDirectoryFS;
 import org.mortbay.jetty.Server;
 import com.microsoft.windowsazure.services.core.storage.*;
@@ -52,6 +51,7 @@ public class IndexerNode {
 	protected IndexWriter _index;
 	protected Server _server;
 	protected IndexerHandler _handler;
+	private Directory _directory;
 	public static CloudStorageAccount storageAccount;
 	/*public static String contName = "lucene1";
 	public static String storageConnectionString = "";*/
@@ -76,11 +76,27 @@ public class IndexerNode {
 	    Directory index = new BlobDirectoryFS(storageAccount, config.getString("container"), new RAMDirectory());//, null
 	    Server server = new Server(9999);
 	    IndexerHandler handler = new IndexerHandler();
-		NEW_IndexerNode(analyzer, index, server, handler);
-		server.start();
-		server.join();
-		
+		final IndexerNode node = NEW_IndexerNode(analyzer, index, server, handler);
 
+		final Thread mainThread = Thread.currentThread();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+		    public void run() {
+		        try {
+					node.shutdown();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		        try {
+					mainThread.join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		    }
+		});
+	    server.start();
+		server.join();
 	}
 	
 	public void download() throws URISyntaxException, StorageException, IOException {
@@ -122,7 +138,7 @@ public class IndexerNode {
 			}
 		}
 		w.setInfoStream(System.out);
-	    IndexerNode node = new IndexerNode(w, server, handler);
+	    IndexerNode node = new IndexerNode(w, dir, server, handler);
 	    server.addHandler(handler);
 	    handler.setNode(node);
 	    
@@ -135,7 +151,8 @@ public class IndexerNode {
 	 * @param server the existing server
 	 * @throws Exception 
 	 */
-	public IndexerNode(IndexWriter index, Server server, IndexerHandler handler) throws Exception {
+	public IndexerNode(IndexWriter index, Directory dir, Server server, IndexerHandler handler) throws Exception {
+		_directory = dir;
 		_index = index;
 		_server = server;
 		_handler = handler;
@@ -163,5 +180,11 @@ public class IndexerNode {
 	
 	protected void addDoc(Document doc) throws IOException {
 	    _index.addDocument(doc);
+	}
+	
+	public void shutdown() throws Exception {
+		_index.close();
+		_directory.close();
+		_server.stop();
 	}
 }
