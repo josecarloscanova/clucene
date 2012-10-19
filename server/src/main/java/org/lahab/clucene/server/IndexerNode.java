@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -56,11 +58,8 @@ public class IndexerNode {
 	protected IndexWriter _index;
 	private Directory _directory;
 	public static CloudStorageAccount storageAccount;
-	/*public static String contName = "lucene1";
-	public static String storageConnectionString = "";*/
 	public static String configFile = "../config.json";
-	public static JSONObject config;
-	
+	public static JSONObject config; 
 	
 	public static void main(String[] args) throws Exception {
 		// Retrieve storage account from connection-string
@@ -73,6 +72,13 @@ public class IndexerNode {
 													   azureConf.getString("AccountName") +
 													   ";AccountKey=" +
 													   azureConf.getString("AccountKey") + ";");
+			
+			java.util.logging.Handler[] handlers =
+		    		Logger.getLogger( "" ).getHandlers();
+		    	    for ( int index = 0; index < handlers.length; index++ ) {
+		    	      handlers[index].setLevel( Level.FINEST );
+		    	    }
+			WikipediaParser.LOGGER.setLevel(Level.FINEST);
 		}
 
 	    StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
@@ -147,7 +153,7 @@ public class IndexerNode {
 				dir.clearLock("write.lock");
 			}
 		}
-		w.setInfoStream(System.out);
+		//w.setInfoStream(System.out);
 	    IndexerNode node = new IndexerNode(w, dir);
 	    
 		return node;		

@@ -40,6 +40,5 @@ public class DebugServlet extends HttpServlet {
 			}
         	response.getWriter().println("Download finished");
         }
-        
 	}
 }

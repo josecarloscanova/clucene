@@ -38,6 +38,7 @@ public class IndexServlet extends HttpServlet {
 	 */
 	private static final long serialVersionUID = 1L;
 	protected IndexerNode _node;
+	protected WikipediaParser parser = new WikipediaParser();
 	
 	public IndexServlet(IndexerNode node) {
 		_node = node;
@@ -52,13 +53,18 @@ public class IndexServlet extends HttpServlet {
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().println("session=" + request.getSession(true).getId());
         
-        Document doc = new Document();
-        BufferedReader buf = request.getReader();
-	    String value = buf.readLine(); 
-	    doc.add(new Field("title", value, Field.Store.YES, Field.Index.ANALYZED));
-	    ArrayList<Document> docs = new ArrayList<Document>();
-	    docs.add(doc);
-	    _node.addDocuments(docs);
-	    response.getWriter().println("<h1>" + value + "</h1>");
+        Document doc;
+		try {
+			doc = parser.parse(request.getInputStream(), "bingou");
+		    ArrayList<Document> docs = new ArrayList<Document>();
+		    docs.add(doc);
+		    _node.addDocuments(docs);
+		    response.getWriter().println("<h1>bingou</h1>");
+		} catch (Exception e) {
+			e.printStackTrace();
+			response.getWriter().println("failed");
+		}
+
+
 	}
 }
