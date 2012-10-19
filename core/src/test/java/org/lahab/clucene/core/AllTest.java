@@ -20,6 +20,10 @@ package org.lahab.clucene.core;
  * #L%
  */
 
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
+
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -27,6 +31,8 @@ import junit.framework.TestSuite;
 /**
  * Unit test for simple App.
  */
+@RunWith(Suite.class)
+@SuiteClasses({})
 public class AllTest 
     extends TestCase
 {

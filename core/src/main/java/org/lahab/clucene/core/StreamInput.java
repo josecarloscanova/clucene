@@ -1,4 +1,4 @@
-package org.lahab.clucene.core.cache;
+package org.lahab.clucene.core;
 
 /*
  * #%L
@@ -20,28 +20,28 @@ package org.lahab.clucene.core.cache;
  * #L%
  */
 
-/** 
- * Cache the is always full and therefore useless (except for tests)
- * @author charlymolter
- *
- */
-public class DummyCache extends Cache {
+import java.io.IOException;
+import java.io.InputStream;
 
-	DummyCache() {
-		super(0);
-	}
+import org.apache.lucene.store.IndexInput;
 
-	@Override
-	protected int getAvailableIndex() {
-		return 0;
-	}
-
-	@Override
-	public synchronized void add(Object key, Object value) {
-	}
+public class StreamInput extends InputStream {
+	public IndexInput input;
 	
-	@Override
-	public synchronized Object get(Object key) {
-		return null;
+	public StreamInput(IndexInput openInput) {
+		input = openInput;
 	}
+
+	@Override
+	public int read() throws IOException {
+		System.out.println("file:" + input.getFilePointer() + "/" + input.length());
+		if (input.getFilePointer() >= input.length()) {
+			return -1;
+		}
+		System.out.println("Attempt to read byte: "+ input.getFilePointer());
+		int b = (int) input.readByte() & 0xff;
+		System.out.println(b);
+		return b;
+	}
+
 }

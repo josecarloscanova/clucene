@@ -21,97 +21,154 @@ package org.lahab.clucene.core;
  */
 
 
-import java.io.EOFException;
+import java.io.OutputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.store.BufferedIndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.Constants;
+import org.apache.lucene.store.IndexInput;
 
-public class BlobInputStream extends BufferedIndexInput {
-    protected final int chunkSize;
-	protected BlobFile file;
-	protected boolean isClone = false;
-    public static final int DEFAULT_READ_CHUNK_SIZE = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : 100 * 1024 * 1024;
+import com.microsoft.windowsazure.services.blob.client.CloudBlobContainer;
+import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
+import com.microsoft.windowsazure.services.core.storage.StorageException;
 
-    public BlobInputStream(String resourceDesc, BlobFile f) throws IOException {
-      super(resourceDesc, 1024);
-      file = f;
-      this.chunkSize = DEFAULT_READ_CHUNK_SIZE;
-    }
-  
-    /** IndexInput methods */
-    @Override
-    protected void readInternal(byte[] b, int offset, int len)
-         throws IOException {
-      synchronized (file) {
-        long position = getFilePointer();
-        if (position != file.position) {
-          file.seek(position);
-          file.position = position;
+public class BlobInputStream extends IndexInput {
+	  protected BlobDirectoryFS directory;
+	  protected CloudBlobContainer container;
+	  protected CloudBlockBlob blob;
+	  protected String name;
+	  
+	  protected IndexInput input;
+	  protected Lock mutex = new ReentrantLock();
+
+	public BlobInputStream(BlobDirectoryFS dir, CloudBlockBlob blob) throws IOException {
+		
+		  try {
+			name = blob.getName();
+			mutex.lock();
+			System.out.println("Opening InputStream: " + blob.getName());
+			directory = dir;
+			container = directory.getBlobContainer();
+			this.blob = blob;
+			String fname = name;
+			boolean loadInCache = false;
+			if (!directory.getCacheDirectory().fileExists(fname)) {
+				loadInCache = true;
+				System.out.println("File doesn't exist in cache adding it: " + fname);
+			} else {
+				long cachedLength = directory.getCacheDirectory().fileLength(fname);
+				blob.downloadAttributes();
+				long blobLength = blob.getProperties().getLength();
+				long cacheLastModified = directory.getCacheDirectory().fileModified(fname);
+				
+				long lastModified = blob.getProperties().getLastModified().getTime();
+				if (cachedLength != blobLength || lastModified - cacheLastModified > 10) {
+					loadInCache = true;
+				}	
+				System.out.println("File too old in cache refreshing it: " + fname);
+			}
+			if (loadInCache) {
+
+				OutputStream os = directory.createCachedOutputAsStream(fname);
+				System.out.println("Downloading distant version of: " + fname);
+				blob.download(os);
+				System.out.println("GET file "+ name + " retrieved " + directory.fileLength(fname));
+				os.flush();
+				os.close();
+			}
+			input = directory.getCacheDirectory().openInput(name);
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (StorageException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+            mutex.unlock();
         }
-        int total = 0;
-
-        try {
-          do {
-            final int readLength;
-            if (total + chunkSize > len) {
-              readLength = len - total;
-            } else {
-              // LUCENE-1566 - work around JVM Bug by breaking very large reads into chunks
-              readLength = chunkSize;
-            }
-            final int i = file.read(b, offset + total, readLength);
-            if (i == -1) {
-              throw new EOFException("read past EOF: " + this);
-            }
-            file.position += i;
-            total += i;
-          } while (total < len);
-        } catch (OutOfMemoryError e) {
-          // propagate OOM up and add a hint for 32bit VM Users hitting the bug
-          // with a large chunk size in the fast path.
-          final OutOfMemoryError outOfMemoryError = new OutOfMemoryError(
-              "OutOfMemoryError likely caused by the Sun VM Bug described in "
-              + "https://issues.apache.org/jira/browse/LUCENE-1566; try calling FSDirectory.setReadChunkSize "
-              + "with a value smaller than the current chunk size (" + chunkSize + ")");
-          outOfMemoryError.initCause(e);
-          throw outOfMemoryError;
-        } catch (IOException ioe) {
-          IOException newIOE = new IOException(ioe.getMessage() + ": " + this);
-          newIOE.initCause(ioe);
-          throw newIOE;
-        }
-      }
-    }
-  
-    @Override
-    public void close() throws IOException {
-      // only close the file if this is not a clone
-      if (!isClone) file.close();
-    }
-  
-    @Override
-    protected void seekInternal(long position) {
-    }
-  
-    @Override
-    public long length() {
-      return file.getLength();
-    }
-  
-    @Override
-    public Object clone() {
-      BlobInputStream clone = (BlobInputStream)super.clone();
-      clone.isClone = true;
-      return clone;
-    }
-    
-    @Override
-    public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-      numBytes -= flushBuffer(out, numBytes);
-      // If out is FSIndexOutput, the copy will be optimized
-      out.copyBytes(this, numBytes);
-    }
-
-}
+	  }
+	  
+	  public BlobInputStream(BlobInputStream clone) {
+		  mutex.lock();
+		  directory = clone.directory;
+		  container = clone.container;
+		  blob = clone.blob;
+		  input = (IndexInput) clone.input.clone();
+		  
+		  mutex.unlock();
+	  }
+	  
+	  @Override
+	  public byte readByte() {
+		  try {
+			return input.readByte();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		assert false;
+		return 0;
+	  }
+	  
+	  @Override
+	  public void readBytes(byte[] b, int offset, int len) {
+		  try {
+			  input.readBytes(b, offset, len);
+		  } catch (IOException e) {
+			  // TODO Auto-generated catch block
+			  e.printStackTrace();
+		  }
+		  assert false;
+	  }
+	  
+	  @Override
+	  public long getFilePointer() {
+		  return input.getFilePointer();
+	  }
+	  
+	  @Override
+	  public void seek(long position) {
+		  try {
+			input.seek(position);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	  }
+	  
+	  @Override
+	  public void close() {
+		  mutex.lock();
+		  try {
+			System.out.println("Closing local input stream for " + name);
+			input.close();
+			input = null;
+			directory = null;
+			container = null;
+			blob = null;  
+		  } catch (IOException e) {
+			  // TODO Auto-generated catch block
+			  e.printStackTrace();
+		  } finally {
+			  mutex.unlock();
+		  }
+	  }
+	  
+	  @Override
+	  public long length() {
+		  return input.length();
+	  }
+	  
+	  @Override
+	  public Object clone() {
+		  IndexInput clone = null;
+		  mutex.lock();
+		  clone = (IndexInput) new BlobInputStream(this);
+		  assert clone != null;
+		  mutex.unlock();
+		  return clone;
+	  }
+	  
+	  
+  }

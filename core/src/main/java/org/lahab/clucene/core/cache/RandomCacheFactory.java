@@ -1,8 +1,8 @@
-package org.lahab.clucene.client;
+package org.lahab.clucene.core.cache;
 
 /*
  * #%L
- * client
+ * core
  * %%
  * Copyright (C) 2012 NTNU
  * %%
@@ -20,14 +20,17 @@ package org.lahab.clucene.client;
  * #L%
  */
 
-/**
- * Hello world!
- *
- */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
-    }
+public class RandomCacheFactory implements CacheFactory {
+
+	private int size;
+	
+	public RandomCacheFactory (int size) {
+		this.size = size;
+	}
+	
+	@Override
+	public Cache create() {
+		return new RandomCache(size);
+	}
+
 }

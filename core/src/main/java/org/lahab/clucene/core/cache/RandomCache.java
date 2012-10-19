@@ -25,7 +25,7 @@ import java.util.Random;
 
 public class RandomCache extends Cache {
 	
-	public RandomCache(int maxSize) {
+	RandomCache(int maxSize) {
 		super(maxSize);
 	}
 

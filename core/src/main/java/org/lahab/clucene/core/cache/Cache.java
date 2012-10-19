@@ -28,7 +28,7 @@ public abstract class Cache {
 	protected int maxSize;
 	protected int nbEntries = 0;
 	
-	public Cache(int maxSize) {
+	Cache(int maxSize) {
 		this.maxSize = maxSize;
 		cache = new CacheElement[maxSize];
 		reference = new HashMap<Object, Object>(maxSize);

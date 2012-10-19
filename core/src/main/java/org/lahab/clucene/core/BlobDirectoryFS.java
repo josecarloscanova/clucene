@@ -20,57 +20,231 @@ package org.lahab.clucene.core;
  * #L%
  */
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NoSuchDirectoryException;
-import org.lahab.clucene.core.cache.Cache;
-import org.lahab.clucene.core.cache.RandomCache;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Lock;
 
+import com.microsoft.windowsazure.services.blob.client.CloudBlobClient;
+import com.microsoft.windowsazure.services.blob.client.CloudBlobContainer;
+import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
+import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
+import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
+import com.microsoft.windowsazure.services.core.storage.StorageException;
 
-public class BlobDirectoryFS extends BlobDirectory {
-	File directory;
+public class BlobDirectoryFS extends Directory {
+	protected CloudBlobContainer container;
+	protected CloudBlobClient client;
+	protected String catalog;
+	protected Directory cacheDirectory;
 	
-	public BlobDirectoryFS(String path, LockFactory lockFactory)
-			throws IOException {
-		super(path, lockFactory);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	@Override
-	protected void init(String path) throws IOException {
-		directory = new File(path);
-	    if (!directory.exists()) {
-	        throw new NoSuchDirectoryException("directory '" + directory + "' does not exist");
-	    } else if (!directory.isDirectory()) {
-	        throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
-	    }
-	    // Exclude subdirs
-	    String[] result = directory.list(new FilenameFilter() {
-	        public boolean accept(File dir, String file) {
-	            return !new File(dir, file).isDirectory();
-	        }
-	    });
-
-	    if (result == null)
-	      throw new IOException("directory '" + directory + "' exists and is a directory, but cannot be listed: list() returned null");
-
-	    for (String str: result) {
-	    	fileMap.put(str, NEW_BlobFile(str));
-	    }
+	public BlobDirectoryFS (CloudStorageAccount storageAccount) throws URISyntaxException, StorageException {
+		this(storageAccount, null, null);
 	}
 	
+	public BlobDirectoryFS (CloudStorageAccount storageAccount, String catalog, Directory cacheDirectory) throws URISyntaxException, StorageException {
+		assert storageAccount != null;
+		this.catalog = catalog;
+		client = storageAccount.createCloudBlobClient();
+		initCacheDirectory(cacheDirectory);
+	}
+	
+	public void clearCache() throws IOException {
+		for(String file : cacheDirectory.listAll()) {
+			cacheDirectory.deleteFile(file);
+		}
+	}
+	
+	public CloudBlobContainer getBlobContainer() {
+		return container;
+	}
+	
+	public Directory getCacheDirectory() {
+		return cacheDirectory;
+	}
+	
+	public void setCacheDirectory(Directory cacheDir) {
+		cacheDirectory = cacheDir;
+	}
+	
+	protected void initCacheDirectory(Directory cacheDir) throws URISyntaxException, StorageException {
+		assert cacheDir != null;
+		cacheDirectory = cacheDir;
+		createContainer();
+	}
+	
+	public void createContainer() throws URISyntaxException, StorageException {
+		container = client.getContainerReference(catalog);
+		container.createIfNotExist();
+	}
+	
 	@Override
-	protected BlobFile NEW_BlobFile(String name) throws IOException {
-		Cache cache = new RandomCache(1024);
-		return new BlobFileFS(this, name, cache);
+	public String[] listAll() {
+		Set<String> fileNames = new LinkedHashSet<String>();
+		for (ListBlobItem blobItem : container.listBlobs()) {
+		    fileNames.add(blobItem.getUri().relativize(container.getUri()).toString());
+		}
+		return fileNames.toArray(new String[fileNames.size()]);
+	}
+	
+	@Override
+	public boolean fileExists(String name) {
+		CloudBlockBlob blob;
+		try {
+			blob = container.getBlockBlobReference(name);
+			blob.downloadAttributes();
+			return true;
+		} catch (StorageException e) {
+			System.out.println("The file" + name + "doesn't exist");
+			return false;
+		} catch (URISyntaxException e) {
+			assert false;
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	@Override
+	public long fileModified(String name) {
+		CloudBlockBlob blob;
+		try {
+			blob = container.getBlockBlobReference(name);
+			blob.downloadAttributes();
+			return blob.getProperties().getLastModified().getTime();
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+	
+	@Override
+	@Deprecated
+	public void touchFile(String name) {
+		assert false;
+	}
+	
+	@Override
+	public void deleteFile(String name) throws IOException{
+		CloudBlockBlob blob;
+		try {
+			blob = container.getBlockBlobReference(name);
+			blob.deleteIfExists();
+			System.out.println("DELETE" + name);
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		} catch (StorageException e) {
+			// That is a fall through...
+			//e.printStackTrace();
+			System.out.println("Trying to delete a file that doesn't exists" + name);
+		}
+		if (cacheDirectory.fileExists(name + ".blob")) {
+			cacheDirectory.deleteFile(name + ".blob");
+		}
+		if (cacheDirectory.fileExists(name)) {
+			cacheDirectory.deleteFile(name);
+		}
 	}
 
+	@Override
+	public long fileLength(String name) {
+		CloudBlockBlob blob;
+		try {
+			blob = container.getBlockBlobReference(name);
+			blob.downloadAttributes();
+			return blob.getProperties().getLength();
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+			assert false;
+		} catch (StorageException e) {
+			e.printStackTrace();
+			assert false;
+		}
+		return 0;
+	}
+	
+	@Override
+	public IndexOutput createOutput(String name) {
+		CloudBlockBlob blob;
+		try {
+			blob = container.getBlockBlobReference(name);
+			System.out.println("Output stream on " + name + " blob: " + blob);
+			return new BlobOutputStream(this, blob);
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (StorageException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		assert false;
+		return null;
+	}
+	
+	@Override
+	public IndexInput openInput(String name) {
+		CloudBlockBlob blob;
+		try {
+			blob = container.getBlockBlobReference(name);
+			System.out.println("Trying to open stream on " + name + " blob: " + blob);
+			blob.downloadAttributes();
+			IndexInput stream = new BlobInputStream(this, blob);
+			return stream;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			System.out.println("Ok so file not found!");
+			//throw new FileNotFoundException();
+		}
+		return null;
+	}
+	
+    public InputStream openCachedInputAsStream(String name) throws IOException {
+        return new StreamInput(cacheDirectory.openInput(name));
+    }
+
+    public OutputStream createCachedOutputAsStream(String name) throws IOException {
+        return new StreamOutput(cacheDirectory.createOutput(name));
+    }
+
+	@Override
+	public void close() throws IOException {
+        container = null;
+        client = null;
+    }
+	
+	// This will have to move in a lock factory
+	protected Map<String, BlobLock> locks = new HashMap<String, BlobLock>();
+	
+	@Override
+	public synchronized Lock makeLock(String name) {
+		if (!locks.containsKey(name)) {
+			System.out.println("Obtaining a lock on" + name);
+			BlobLock lock = new BlobLock(name, this);
+			locks.put(name, lock);
+			return lock;
+		}
+		return null;
+	}
+	
+	@Override
+	public synchronized void clearLock(String name) {
+		if (locks.containsKey(name)) {
+			try {
+				System.out.println("Releasing a lock on" + name);
+				locks.get(name).release();
+				cacheDirectory.clearLock(name);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
 }

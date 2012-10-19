@@ -20,28 +20,11 @@ package org.lahab.clucene.core.cache;
  * #L%
  */
 
-/** 
- * Cache the is always full and therefore useless (except for tests)
- * @author charlymolter
- *
- */
-public class DummyCache extends Cache {
-
-	DummyCache() {
-		super(0);
-	}
+public class DummyCacheFactory implements CacheFactory {
 
 	@Override
-	protected int getAvailableIndex() {
-		return 0;
-	}
-
-	@Override
-	public synchronized void add(Object key, Object value) {
+	public Cache create() {
+		return new DummyCache();
 	}
 	
-	@Override
-	public synchronized Object get(Object key) {
-		return null;
-	}
 }

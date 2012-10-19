@@ -1,8 +1,8 @@
-package org.lahab.clucene.server;
+package org.lahab.clucene.core.cache;
 
 /*
  * #%L
- * server
+ * core
  * %%
  * Copyright (C) 2012 NTNU
  * %%
@@ -20,14 +20,6 @@ package org.lahab.clucene.server;
  * #L%
  */
 
-/**
- * Hello world!
- *
- */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
-    }
+public interface CacheFactory {
+	public Cache create();
 }

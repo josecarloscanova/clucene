@@ -26,5 +26,15 @@
       <artifactId>core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+			<groupId>org.mortbay.jetty</groupId>
+			<artifactId>jetty</artifactId>
+			<version>6.1.26</version>
+		</dependency>
+	  <dependency>
+	    <groupId>org.apache.tika</groupId>
+	    <artifactId>tika-parsers</artifactId>
+	    <version>0.7</version>
+	  </dependency>
   </dependencies>
 </project>
