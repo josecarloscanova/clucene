@@ -1,6 +1,7 @@
 package org.lahab.clucene.server;
 
 import java.io.File;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -23,8 +24,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.lahab.clucene.core.BlobDirectoryFS;
-import org.mortbay.jetty.Server;
 import com.microsoft.windowsazure.services.core.storage.*;
 import com.microsoft.windowsazure.services.blob.client.*;
 /*
@@ -49,8 +54,6 @@ import com.microsoft.windowsazure.services.blob.client.*;
 
 public class IndexerNode {
 	protected IndexWriter _index;
-	protected Server _server;
-	protected IndexerHandler _handler;
 	private Directory _directory;
 	public static CloudStorageAccount storageAccount;
 	/*public static String contName = "lucene1";
@@ -74,27 +77,35 @@ public class IndexerNode {
 
 	    StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 	    Directory index = new BlobDirectoryFS(storageAccount, config.getString("container"), new RAMDirectory());//, null
-	    Server server = new Server(9999);
-	    IndexerHandler handler = new IndexerHandler();
-		final IndexerNode node = NEW_IndexerNode(analyzer, index, server, handler);
-
-		final Thread mainThread = Thread.currentThread();
+	    final IndexerNode node = NEW_IndexerNode(analyzer, index);
+	    
+	    final Server server = new Server(9999);
+        
+        ServletContextHandler contextIndex = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        
+        contextIndex.setContextPath("/_index");
+        contextIndex.addServlet(new ServletHolder(new IndexServlet(node)),"/*");
+        
+        ServletContextHandler contextDebug = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        contextDebug.setContextPath("/_debug");
+        contextDebug.addServlet(new ServletHolder(new DebugServlet(node)),"/*");
+ 
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        contexts.setHandlers(new Handler[] { contextIndex, contextDebug });
+        
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 		    public void run() {
 		        try {
 					node.shutdown();
+					server.stop();
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		        try {
-					mainThread.join();
-				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 		    }
 		});
+		
+		server.setHandler(contexts);
 	    server.start();
 		server.join();
 	}
@@ -124,8 +135,7 @@ public class IndexerNode {
 	 * @return a newly created IndexerNode
 	 * @throws Exception 
 	 */
-	static public IndexerNode NEW_IndexerNode(Analyzer analyzer, Directory dir, 
-											  Server server, IndexerHandler handler) throws Exception {		
+	static public IndexerNode NEW_IndexerNode(Analyzer analyzer, Directory dir) throws Exception {		
 	    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_36, analyzer);
 	    config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 		IndexWriter w = null;
@@ -138,9 +148,7 @@ public class IndexerNode {
 			}
 		}
 		w.setInfoStream(System.out);
-	    IndexerNode node = new IndexerNode(w, dir, server, handler);
-	    server.addHandler(handler);
-	    handler.setNode(node);
+	    IndexerNode node = new IndexerNode(w, dir);
 	    
 		return node;		
 	}
@@ -151,11 +159,9 @@ public class IndexerNode {
 	 * @param server the existing server
 	 * @throws Exception 
 	 */
-	public IndexerNode(IndexWriter index, Directory dir, Server server, IndexerHandler handler) throws Exception {
+	public IndexerNode(IndexWriter index, Directory dir) throws Exception {
 		_directory = dir;
 		_index = index;
-		_server = server;
-		_handler = handler;
 	}
 	
 	/**
@@ -185,6 +191,5 @@ public class IndexerNode {
 	public void shutdown() throws Exception {
 		_index.close();
 		_directory.close();
-		_server.stop();
 	}
 }
