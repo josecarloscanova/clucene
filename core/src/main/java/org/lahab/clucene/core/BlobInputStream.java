@@ -43,7 +43,6 @@ public class BlobInputStream extends IndexInput {
 	  protected Lock mutex = new ReentrantLock();
 
 	public BlobInputStream(BlobDirectoryFS dir, CloudBlockBlob blob) throws IOException {
-		
 		  try {
 			name = blob.getName();
 			mutex.lock();

@@ -20,51 +20,77 @@ package org.lahab.clucene.server;
  * #L%
  */
 
-import java.io.BufferedReader;
+
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.lahab.clucene.indexer.IndexerNode;
 
+/**
+ * A servlet responsible of indexing
+ * the different actions are:
+ * 	- start: starts the crawling and indexing
+ * 	- stop: shutdown the indexing/crawling
+ * 	- pause: pause the indexing/crawling
+ * 	- resume: resumes the indexing/crawling
+ * @author charlymolter
+ *
+ */
 public class IndexServlet extends HttpServlet {
-	/**
-	 * 
-	 */
+	private static final Logger LOGGER = Logger.getLogger(IndexServlet.class.getName());
+	
 	private static final long serialVersionUID = 1L;
-	protected IndexerNode _node;
-	protected WikipediaParser parser = new WikipediaParser();
+	/** the path from where that servlet can joined */
+	public static final String PATH = "/_index";
+	/** Our indexer thread */
+	protected IndexerNode _indexer;
 	
-	public IndexServlet(IndexerNode node) {
-		_node = node;
+	public IndexServlet(IndexerNode indexer) {
+		_indexer = indexer;
 	}
 	
-	public void setNode(IndexerNode node) {
-		_node = node;
-	}
-
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("session=" + request.getSession(true).getId());
         
-        Document doc;
-		try {
-			doc = parser.parse(request.getInputStream(), "bingou");
-		    ArrayList<Document> docs = new ArrayList<Document>();
-		    docs.add(doc);
-		    _node.addDocuments(docs);
-		    response.getWriter().println("<h1>bingou</h1>");
-		} catch (Exception e) {
-			e.printStackTrace();
-			response.getWriter().println("failed");
-		}
-
-
+        if (request.getRequestURI().equals(PATH + "/start")) {
+        	LOGGER.finer("start");
+			_indexer.run();
+			response.getWriter().write("Indexer started");
+        } else if (request.getRequestURI().equals(PATH + "/stop")) {
+        	LOGGER.finer("stop");
+        	_indexer.stop();
+			response.getWriter().write("Indexer shutingdown");
+        }  else if (request.getRequestURI().equals(PATH + "/pause")) {
+        	LOGGER.finer("pause");
+        	try {
+				_indexer.wait();
+				response.getWriter().write("Indexer paused");
+        	} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        } else if (request.getRequestURI().equals(PATH + "/resume")) {
+        	LOGGER.finer("resume");
+        	_indexer.notify();
+			response.getWriter().write("Indexer restarted");
+        } else if (request.getRequestURI().equals(PATH + "/download")) {
+        	LOGGER.finer("download");
+        	try {
+        		//_indexer.wait();
+				_indexer.download();
+				//_indexer.notify();
+        	} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	
+        }
 	}
 }

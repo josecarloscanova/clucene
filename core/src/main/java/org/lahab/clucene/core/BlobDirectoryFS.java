@@ -230,7 +230,7 @@ public class BlobDirectoryFS extends Directory {
 			locks.put(name, lock);
 			return lock;
 		}
-		return null;
+		return locks.get(name);
 	}
 	
 	@Override
