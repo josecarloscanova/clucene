@@ -14,7 +14,8 @@ all you have to do is put your infos in a config.json file at the root of the pr
             "AccountKey":"key linked to your account"
         },
         "container": "folder to store the index",
-        "downloadDir": "where to download the index"
+        "crawlerFolder": "where crawl4j will put its data", 
+        "downloadFolder": "where the index will be downloaded"
     }
 
 
