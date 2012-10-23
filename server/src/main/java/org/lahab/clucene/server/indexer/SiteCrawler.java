@@ -36,8 +36,8 @@ import edu.uci.ics.crawler4j.parser.HtmlParseData;
 import edu.uci.ics.crawler4j.parser.ParseData;
 import edu.uci.ics.crawler4j.url.WebURL;
 
-public class WikipediaCrawler extends WebCrawler {
-	public final static Logger LOGGER = Logger.getLogger(WikipediaCrawler.class.getName());
+public class SiteCrawler extends WebCrawler {
+	public final static Logger LOGGER = Logger.getLogger(SiteCrawler.class.getName());
 	
 	static Set<String> textMetadataFields = new HashSet<String>();
 	

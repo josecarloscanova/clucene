@@ -81,7 +81,7 @@ public class IndexerNode extends Worker {
 	@Override
 	public void run() {
 		_indexer.start();
-		_crawler.startNonBlocking(WikipediaCrawler.class, _nbCrawlers);
+		_crawler.startNonBlocking(SiteCrawler.class, _nbCrawlers);
 	}
 	
 

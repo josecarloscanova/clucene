@@ -37,7 +37,7 @@ import org.lahab.clucene.server.utils.Configuration;
 public class NodeMain {
 	private static final Logger LOGGER = Logger.getLogger(NodeMain.class.getName());
 	
-	public static final String CONFIG_FILE = "../config.json";
+	public static String CONFIG_FILE = "config.json";
 	public static Configuration _config;
 	public static Worker _worker;
 	public static Server _server;
@@ -45,7 +45,11 @@ public class NodeMain {
 	public static void main(String[] args) throws Exception {
 		// Retrieve storage account from connection-string
 		if (_config == null) {
+			if (args.length != 0 ) {
+				CONFIG_FILE = args[0];
+			}
 			_config = new Configuration(CONFIG_FILE);
+			
 		}
 		_config.configure();
 		HttpServlet servlet = null;
