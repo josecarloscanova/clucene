@@ -62,7 +62,7 @@ public class IndexerMain {
 		_indexer = new IndexerNode(_storageAccount, config.getString("container"), 
 								   "http://en.wikipedia.org", 2, 
 								   config.getString("crawlerFolder"));
-	    _server = new Server(9999);
+	    _server = new Server(7050);
         
 	    // Creates the servlet for indexing purpose
         ServletContextHandler contextIndex = new ServletContextHandler(ServletContextHandler.SESSIONS);
