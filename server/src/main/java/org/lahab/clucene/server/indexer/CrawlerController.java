@@ -1,4 +1,4 @@
-package org.lahab.clucene.indexer;
+package org.lahab.clucene.server.indexer;
 
 /*
  * #%L

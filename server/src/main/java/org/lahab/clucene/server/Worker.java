@@ -20,28 +20,19 @@ package org.lahab.clucene.server;
  * #L%
  */
 
-
 import java.io.IOException;
-import java.util.logging.Logger;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+public abstract class Worker implements Runnable {
 
-public class DebugServlet extends HttpServlet {
-	private static final Logger LOGGER = Logger.getLogger(DebugServlet.class.getName());
-	
-	private static final long serialVersionUID = 1L;
-	public static final String PATH = "/_debug";
-	protected Worker _worker;
-	
-	
-	public DebugServlet(Worker worker) {
-		_worker = worker;
+	/** 
+	 * Gracefully stops the indexing
+	 * @throws IOException 
+	 */
+	abstract public void stop() throws IOException;
+
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		LOGGER.info("useless ftm");
-	}
 }

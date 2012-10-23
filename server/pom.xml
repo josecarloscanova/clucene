@@ -59,7 +59,7 @@
 	        </descriptorRefs>
 	        <archive>
 	          <manifest>
-	            <mainClass>org.lahab.clucene.server.IndexerMain</mainClass>
+	            <mainClass>org.lahab.clucene.server.NodeMain</mainClass>
 	          </manifest>
 	        </archive>
 	      </configuration>

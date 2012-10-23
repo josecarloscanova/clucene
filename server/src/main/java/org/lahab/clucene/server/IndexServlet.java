@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.lahab.clucene.indexer.IndexerNode;
+import org.lahab.clucene.server.indexer.IndexerNode;
 
 /**
  * A servlet responsible of indexing

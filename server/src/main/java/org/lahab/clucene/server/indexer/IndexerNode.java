@@ -1,4 +1,4 @@
-package org.lahab.clucene.indexer;
+package org.lahab.clucene.server.indexer;
 
 /*
  * #%L
@@ -26,6 +26,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 import org.apache.lucene.document.Document;
+import org.lahab.clucene.server.Worker;
+import org.lahab.clucene.server.utils.Configuration;
 
 import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
 
@@ -34,7 +36,7 @@ import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
  * @author charlymolter
  *
  */
-public class IndexerNode implements Runnable {
+public class IndexerNode extends Worker {
 	public final static Logger LOGGER = Logger.getLogger(IndexerNode.class.getName());
 	
 	/** The maximum documents in the queue that are parsed but not indexed yet */
@@ -59,6 +61,11 @@ public class IndexerNode implements Runnable {
 		_myThread = new Thread(this);
 	}
 	
+	public IndexerNode(Configuration _config) throws Exception {
+		this(_config.getStorageAccount(), _config.getContainer(),
+			 _config.getSeed(), _config.getNbCrawler(), _config.getCrawlerFolder());
+	}
+
 	/**
 	 * Download the whole index to the server's hardrive (usefull for looking at it with luke for eg)
 	 * !!! If this is done on a currently indexing server this will suspend the indexing
@@ -77,10 +84,7 @@ public class IndexerNode implements Runnable {
 		_crawler.startNonBlocking(WikipediaCrawler.class, _nbCrawlers);
 	}
 	
-	/** 
-	 * Gracefully stops the indexing
-	 * @throws IOException 
-	 */
+
 	public void stop() throws IOException {
 		_myThread = null;
 		_crawler.Shutdown();
