@@ -64,6 +64,7 @@ public class IndexerNode extends Worker {
 	public IndexerNode(Configuration _config) throws Exception {
 		this(_config.getStorageAccount(), _config.getContainer(),
 			 _config.getSeed(), _config.getNbCrawler(), _config.getCrawlerFolder());
+		SiteCrawler.DOMAIN = _config.getCrawlerDomain();
 	}
 
 	/**

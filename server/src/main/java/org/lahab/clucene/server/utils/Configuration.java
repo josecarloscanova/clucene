@@ -150,5 +150,8 @@ public class Configuration {
 	public boolean isIndexer() {
 		return _isIndexer;
 	}
+	public String getCrawlerDomain() {
+		return _crawlerConf.getString("domain");
+	}
 
 }

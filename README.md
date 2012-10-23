@@ -33,6 +33,7 @@ For an indexer:
         "crawler": {
             "folder": "where crawler4j will put the data",
             "seed": "http://en.wikipedia.org",
+            "domain": "http://en.wikipedia.org", // Sticks to the pages starting with
             "nbCrawler": 2
         },
         "downloadFolder": "../index/cloud"
@@ -49,7 +50,7 @@ Compulsory parameters in the JSON:
 *   port
 *   azure (with DefaultEndpointProtocol, AccountName, AccountKey, container)
 *   For an indexer:
-    *   crawler (folder, seed, nbCrawler)
+    *   crawler (folder, seed, domain, nbCrawler)
     *   downloadFolder
 *   For a searcher:
     * To be completed

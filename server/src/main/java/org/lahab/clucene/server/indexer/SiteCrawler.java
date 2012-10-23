@@ -45,7 +45,7 @@ public class SiteCrawler extends WebCrawler {
             + "|png|tiff?|mid|mp2|mp3|mp4"
             + "|wav|avi|mov|mpeg|ram|m4v|pdf" 
             + "|rm|smil|wmv|swf|wma|zip|rar|gz))$");
-	public final static String domain = "http://en.wikipedia.org/";
+	public static String DOMAIN = null;
 
 	static {
 		textMetadataFields.add(DublinCore.TITLE.getName());
@@ -54,7 +54,7 @@ public class SiteCrawler extends WebCrawler {
 	@Override
 	public boolean shouldVisit(WebURL url) {
 		String href = url.getURL().toLowerCase();
-		return !FILTERS.matcher(href).matches() && href.startsWith(domain);
+		return !FILTERS.matcher(href).matches() && href.startsWith(DOMAIN);
 	}
 	
 	@Override
