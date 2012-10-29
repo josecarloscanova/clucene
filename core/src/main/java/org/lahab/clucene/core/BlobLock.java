@@ -49,7 +49,7 @@ public class BlobLock extends Lock {
 		try {
 			
 			blob = directory.getBlobContainer().getBlockBlobReference(lockedFile);
-			System.out.println("Acquiring lock for" + lockedFile);
+			LOGGER.fine("Acquiring lock for" + lockedFile);
 			try {
 				if (leaseId == null || leaseId == "") {
 					leaseId = blob.acquireLease(null, null);

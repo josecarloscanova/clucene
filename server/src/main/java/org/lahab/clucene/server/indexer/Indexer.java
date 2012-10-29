@@ -61,7 +61,7 @@ public class Indexer implements Runnable {
 	protected final BlockingQueue<Document> _queue;
 	CloudBlobContainer _container;
 	/** How many documents have been added since the last commit */
-	private int lastCommit;
+	private int numberAdded = 0;
 	private volatile Thread _myThread = null;
 	
 	/**
@@ -119,10 +119,12 @@ public class Indexer implements Runnable {
 	 */
 	protected void addDoc(Document doc) throws IOException {
 	    _index.addDocument(doc);
-	    lastCommit++;
-	    if (lastCommit == COMMIT_FREQUENCY) {
+	    numberAdded++;
+	    if (numberAdded % COMMIT_FREQUENCY == 0) {
 	    	_index.commit();
-	    	lastCommit = 0;
+	    }
+	    if (numberAdded % 100 == 0) {
+	    	LOGGER.info(numberAdded + " Document indexed");
 	    }
 	}
 
@@ -132,7 +134,6 @@ public class Indexer implements Runnable {
 		Thread thisThread = Thread.currentThread();
 		while (_myThread == thisThread) {
 			try {
-				LOGGER.info("indexer consume");
 				Document doc = _queue.take();
 				LOGGER.info("indexing: " + doc.get("URI"));
 				this.addDoc(doc);
