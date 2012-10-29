@@ -135,7 +135,7 @@ public class Indexer implements Runnable {
 		while (_myThread == thisThread) {
 			try {
 				Document doc = _queue.take();
-				LOGGER.info("indexing: " + doc.get("URI"));
+				LOGGER.fine("indexing: " + doc.get("URI"));
 				this.addDoc(doc);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block

@@ -60,7 +60,7 @@ public class SiteCrawler extends WebCrawler {
 	@Override
 	public void visit(Page page) {
 		String url = page.getWebURL().getURL();
-		LOGGER.info("crawl:" + url);
+		LOGGER.fine("crawl:" + url);
 		
 		ParseData parseData = page.getParseData();
         if (parseData instanceof HtmlParseData) {
