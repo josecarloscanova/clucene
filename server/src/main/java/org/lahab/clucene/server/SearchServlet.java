@@ -20,21 +20,50 @@ package org.lahab.clucene.server;
  * #L%
  */
 
-import javax.servlet.http.HttpServlet;
+import java.io.IOException;
+import java.util.logging.Logger;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import net.sf.json.JSONObject;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.queryParser.ParseException;
 import org.lahab.clucene.server.searcher.SearcherNode;
 
 
 public class SearchServlet extends HttpServlet {
+	private static final Logger LOGGER = Logger.getLogger(SearchServlet.class.getName());
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	public static final String PATH = "/_search";
+	
 	private SearcherNode _searcher;
 	
 	public SearchServlet(SearcherNode searcher) {
 		_searcher = searcher;
 	}
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	public static final String PATH = "_search";
+	
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		response.setContentType("application/json");
+        response.setStatus(HttpServletResponse.SC_OK);
+		JSONObject results = new JSONObject();
+		String query = request.getReader().readLine();
+        try {
+        	LOGGER.info("Searching:" + query);
+			Document[] docs = _searcher.search(query);
+			for (int i = 0; i < docs.length; i++) {
+				results.accumulate(docs[i].get("URI"), docs[i].get("title"));
+			}
+			response.getWriter().write(results.toString());
+        } catch (ParseException e) {
+			response.getWriter().write("{\"message\": \"Your query couldn't be parsed\"}");
+		}
+	}
 
 }

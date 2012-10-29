@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.util.logging.Logger;
 
 import org.apache.lucene.store.Lock;
 
@@ -32,7 +33,7 @@ import com.microsoft.windowsazure.services.core.storage.AccessCondition;
 import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 public class BlobLock extends Lock {
-
+	private static final Logger LOGGER = Logger.getLogger(BlobLock.class.getName());
 	protected String lockedFile;
 	protected BlobDirectoryFS directory;
 	protected String leaseId;
@@ -52,11 +53,10 @@ public class BlobLock extends Lock {
 			try {
 				if (leaseId == null || leaseId == "") {
 					leaseId = blob.acquireLease(null, null);
-					System.out.println("Acquired lock for" + lockedFile + "id:" + leaseId);
+					LOGGER.finer("Acquired lock for" + lockedFile + "id:" + leaseId);
 				}
 				return (leaseId != null && leaseId != "");
 			} catch (StorageException e1) {
-				System.out.println("Storage exception");
 				if (handleStorageException(blob, e1)) {
 					return obtain();
 				}
@@ -74,13 +74,13 @@ public class BlobLock extends Lock {
 
 	@Override
 	public void release() throws IOException {
-		System.out.println("Locks relase" + lockedFile + "leaseId" + leaseId);
+		LOGGER.finer("Locks relase" + lockedFile + "leaseId" + leaseId);
 		if (leaseId != null && leaseId != "") {
 			try {
 				CloudBlockBlob blob = directory.getBlobContainer().getBlockBlobReference(lockedFile);
 				blob.releaseLease(AccessCondition.generateLeaseCondition(leaseId));
 				leaseId = null;
-				System.out.println("Locks relased" + lockedFile + "leaseId" + leaseId);
+				LOGGER.finer("Locks relased" + lockedFile + "leaseId" + leaseId);
 			} catch (StorageException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -98,15 +98,15 @@ public class BlobLock extends Lock {
 			blob = directory.getBlobContainer().getBlockBlobReference(lockedFile);
 
 			try {
-				System.out.println("IsLocked?" + lockedFile + "leaseId:" + leaseId);
+				LOGGER.finest("IsLocked?" + lockedFile + "leaseId:" + leaseId);
 				if (leaseId == null || leaseId == "") {
 					String tmpLeaseId = blob.acquireLease(null, null);
 					if (tmpLeaseId == null || tmpLeaseId == "") {
-						System.out.println("Yes it is Locked" + lockedFile + "leaseId" + leaseId);
+						LOGGER.finest("Yes it is Locked" + lockedFile + "leaseId" + leaseId);
 						return true;
 					}
 					blob.releaseLease(AccessCondition.generateLeaseCondition(tmpLeaseId));
-					System.out.println("IsLocked Now?" + lockedFile + "leaseId:" + leaseId);
+					LOGGER.finest("IsLocked Now?" + lockedFile + "leaseId:" + leaseId);
 					return leaseId == null || leaseId == "";
 				}
 			} catch (StorageException e1) {
@@ -124,7 +124,6 @@ public class BlobLock extends Lock {
 	}
 
 	private boolean handleStorageException(CloudBlockBlob blob, StorageException e) {
-		e.printStackTrace();
 		if (e.getHttpStatusCode() == 404) {
 				try {
 					directory.createContainer();

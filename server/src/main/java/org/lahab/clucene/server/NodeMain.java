@@ -57,11 +57,13 @@ public class NodeMain {
 		
 		// Creates an indexer or a searcher depending on the configuration
 		if (_config.isIndexer()) {
+			LOGGER.info("starting indexer node");
 			IndexerNode indexer = new IndexerNode(_config);
 			servlet = new IndexServlet(indexer);
 			path = IndexServlet.PATH;
 			_worker = indexer;
 		} else {
+			LOGGER.info("starting searcher node");
 			SearcherNode searcher = new SearcherNode(_config);
 			IndexerNode.DOWNLOAD_DIR = _config.getDownloadDir();
 			servlet = new SearchServlet(searcher);

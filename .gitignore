@@ -49,3 +49,5 @@ local.properties
 
 # We ignore our config file not to share our blostore id with the world
 config.json
+config-indexer.json
+config-searcher.json

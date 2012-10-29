@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -42,6 +43,9 @@ import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
 import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 public class BlobDirectoryFS extends Directory {
+	private static final Logger LOGGER = Logger.getLogger(BlobDirectoryFS.class.getName());
+	
+	
 	protected CloudBlobContainer container;
 	protected CloudBlobClient client;
 	protected String catalog;
@@ -104,7 +108,7 @@ public class BlobDirectoryFS extends Directory {
 			blob.downloadAttributes();
 			return true;
 		} catch (StorageException e) {
-			System.out.println("The file" + name + "doesn't exist");
+			LOGGER.finer("The file" + name + "doesn't exist");
 			return false;
 		} catch (URISyntaxException e) {
 			assert false;
@@ -137,13 +141,12 @@ public class BlobDirectoryFS extends Directory {
 		try {
 			blob = container.getBlockBlobReference(name);
 			blob.deleteIfExists();
-			System.out.println("DELETE" + name);
+			LOGGER.finer("DELETE" + name);
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		} catch (StorageException e) {
 			// That is a fall through...
 			//e.printStackTrace();
-			System.out.println("Trying to delete a file that doesn't exists" + name);
 		}
 		if (cacheDirectory.fileExists(name + ".blob")) {
 			cacheDirectory.deleteFile(name + ".blob");
@@ -175,7 +178,7 @@ public class BlobDirectoryFS extends Directory {
 		CloudBlockBlob blob;
 		try {
 			blob = container.getBlockBlobReference(name);
-			System.out.println("Output stream on " + name + " blob: " + blob);
+			LOGGER.fine("Output stream on " + name + " blob: " + blob);
 			return new BlobOutputStream(this, blob);
 		} catch (URISyntaxException e) {
 			// TODO Auto-generated catch block
@@ -193,13 +196,12 @@ public class BlobDirectoryFS extends Directory {
 		CloudBlockBlob blob;
 		try {
 			blob = container.getBlockBlobReference(name);
-			System.out.println("Trying to open stream on " + name + " blob: " + blob);
+			LOGGER.fine("Trying to open stream on " + name + " blob: " + blob);
 			blob.downloadAttributes();
 			IndexInput stream = new BlobInputStream(this, blob);
 			return stream;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			System.out.println("Ok so file not found!");
 			//throw new FileNotFoundException();
 		}
 		return null;
@@ -225,7 +227,7 @@ public class BlobDirectoryFS extends Directory {
 	@Override
 	public synchronized Lock makeLock(String name) {
 		if (!locks.containsKey(name)) {
-			System.out.println("Obtaining a lock on" + name);
+			LOGGER.finer("Obtaining a lock on" + name);
 			BlobLock lock = new BlobLock(name, this);
 			locks.put(name, lock);
 			return lock;
@@ -237,7 +239,7 @@ public class BlobDirectoryFS extends Directory {
 	public synchronized void clearLock(String name) {
 		if (locks.containsKey(name)) {
 			try {
-				System.out.println("Releasing a lock on" + name);
+				LOGGER.finer("Releasing a lock on" + name);
 				locks.get(name).release();
 				cacheDirectory.clearLock(name);
 			} catch (IOException e) {

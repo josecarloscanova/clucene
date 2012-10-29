@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
 
 import org.apache.lucene.store.IndexOutput;
 
@@ -34,6 +35,8 @@ import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
 import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 public class BlobOutputStream extends IndexOutput {
+	private static final Logger LOGGER = Logger.getLogger(BlobOutputStream.class.getName());
+	
 	protected BlobDirectoryFS directory;
 	protected CloudBlobContainer container;
 	protected CloudBlockBlob blob;
@@ -49,7 +52,7 @@ public class BlobOutputStream extends IndexOutput {
 			container = dir.getBlobContainer();
 			this.blob = blob;
 			name = blob.getName();
-			System.out.println("Opening OutputStream " + blob.getName());
+			LOGGER.finer("Opening OutputStream " + blob.getName());
 			output = directory.getCacheDirectory().createOutput(name);
 		} catch (URISyntaxException e) {
 			// TODO Auto-generated catch block
@@ -81,11 +84,9 @@ public class BlobOutputStream extends IndexOutput {
 			long length = output.length();
 			output.close();
 			// Difference
-			System.out.println("Size of the upload: " + length);
 			InputStream bStream = directory.openCachedInputAsStream(fname);
-			System.out.println("Uploading cache version of: " + fname);
+			LOGGER.fine("Uploading cache version of: " + fname);
 			blob.upload(bStream, length);
-			System.out.println("PUT finished for: " + fname);
 		
 			bStream.close();
 		} catch (IOException e) {

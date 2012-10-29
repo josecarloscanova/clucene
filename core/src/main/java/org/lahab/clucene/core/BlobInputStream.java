@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
 
 import org.apache.lucene.store.IndexInput;
 
@@ -41,12 +42,14 @@ public class BlobInputStream extends IndexInput {
 	  
 	  protected IndexInput input;
 	  protected Lock mutex = new ReentrantLock();
+	  private static final Logger LOGGER = Logger.getLogger(BlobInputStream.class.getName());
+		
 
 	public BlobInputStream(BlobDirectoryFS dir, CloudBlockBlob blob) throws IOException {
 		  try {
 			name = blob.getName();
 			mutex.lock();
-			System.out.println("Opening InputStream: " + blob.getName());
+			LOGGER.fine("Opening InputStream: " + blob.getName());
 			directory = dir;
 			container = directory.getBlobContainer();
 			this.blob = blob;
@@ -54,7 +57,7 @@ public class BlobInputStream extends IndexInput {
 			boolean loadInCache = false;
 			if (!directory.getCacheDirectory().fileExists(fname)) {
 				loadInCache = true;
-				System.out.println("File doesn't exist in cache adding it: " + fname);
+				LOGGER.finest("File doesn't exist in cache adding it: " + fname);
 			} else {
 				long cachedLength = directory.getCacheDirectory().fileLength(fname);
 				blob.downloadAttributes();
@@ -65,14 +68,13 @@ public class BlobInputStream extends IndexInput {
 				if (cachedLength != blobLength || lastModified - cacheLastModified > 10) {
 					loadInCache = true;
 				}	
-				System.out.println("File too old in cache refreshing it: " + fname);
+				LOGGER.finest("File too old in cache refreshing it: " + fname);
 			}
 			if (loadInCache) {
 
 				OutputStream os = directory.createCachedOutputAsStream(fname);
-				System.out.println("Downloading distant version of: " + fname);
+				LOGGER.finer("Downloading distant version of: " + fname);
 				blob.download(os);
-				System.out.println("GET file "+ name + " retrieved " + directory.fileLength(fname));
 				os.flush();
 				os.close();
 			}
@@ -140,7 +142,7 @@ public class BlobInputStream extends IndexInput {
 	  public void close() {
 		  mutex.lock();
 		  try {
-			System.out.println("Closing local input stream for " + name);
+			LOGGER.finer("Closing local input stream for " + name);
 			input.close();
 			input = null;
 			directory = null;
