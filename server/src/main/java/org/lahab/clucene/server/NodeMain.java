@@ -9,6 +9,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.lahab.clucene.server.indexer.Indexer;
 import org.lahab.clucene.server.indexer.IndexerNode;
 import org.lahab.clucene.server.searcher.SearcherNode;
 import org.lahab.clucene.server.utils.Configuration;
@@ -64,6 +65,8 @@ public class NodeMain {
 			_worker = indexer;
 		} else {
 			LOGGER.info("starting searcher node");
+			Indexer.COMMIT_FREQUENCY = _config.getCommitFreq();
+			Indexer.NB_THREAD = _config.getNbIndexer();
 			SearcherNode searcher = new SearcherNode(_config);
 			IndexerNode.DOWNLOAD_DIR = _config.getDownloadDir();
 			servlet = new SearchServlet(searcher);

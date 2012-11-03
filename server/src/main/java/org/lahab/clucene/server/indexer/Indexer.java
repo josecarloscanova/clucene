@@ -55,9 +55,9 @@ public class Indexer implements Runnable {
 	public final static Logger LOGGER = Logger.getLogger(Indexer.class.getName());
 	
 	/** How often the indexWriter will commit the new documents.*/
-	public static final int COMMIT_FREQUENCY = 10;
+	public static int COMMIT_FREQUENCY = 10;
 	
-	public static final int NB_THREAD = 3;
+	public static int NB_THREAD = 3;
 	/** The index writer */
 	protected static IndexWriter _index;
 	/** The directory that will write */

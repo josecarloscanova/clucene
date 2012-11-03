@@ -135,6 +135,14 @@ public class Configuration {
 		return _crawlerConf.getInt("nbCrawler");
 	}
 	
+	public int getNbIndexer() {
+		return _nodeConf.getInt("nbThread");
+	}
+	
+	public int getCommitFreq() {
+		return _nodeConf.getInt("commitFreq");
+	}
+	
 	public JSONObject getMainConfig() {
 		return _config;
 	}
@@ -150,6 +158,7 @@ public class Configuration {
 	public boolean isIndexer() {
 		return _isIndexer;
 	}
+	
 	public String getCrawlerDomain() {
 		return _crawlerConf.getString("domain");
 	}

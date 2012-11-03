@@ -40,7 +40,7 @@ public class IndexerNode extends Worker {
 	public final static Logger LOGGER = Logger.getLogger(IndexerNode.class.getName());
 	
 	/** The maximum documents in the queue that are parsed but not indexed yet */
-	public static int MAXDOCS = 3;
+	public static int MAXDOCS = 10;
 	/** The directory where the index is written when we download it */
 	public static String DOWNLOAD_DIR = null;
 	/** The indexer thread */

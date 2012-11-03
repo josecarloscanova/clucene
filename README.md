@@ -36,7 +36,9 @@ For an indexer:
             "domain": "http://en.wikipedia.org", // Sticks to the pages starting with
             "nbCrawler": 2
         },
-        "downloadFolder": "../index/cloud"
+        "downloadFolder": "../index/cloud",
+        nbThread: 3,
+        commitFreq: 100
     } 
 
 For a searcher:
