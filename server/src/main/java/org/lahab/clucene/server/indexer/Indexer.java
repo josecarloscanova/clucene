@@ -24,11 +24,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
@@ -42,6 +44,7 @@ import com.microsoft.windowsazure.services.blob.client.CloudBlobContainer;
 import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
 import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
 import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
+import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 /**
  * A thread that will index the documents given in the queue to a AzureBlobStorage
@@ -53,24 +56,28 @@ public class Indexer implements Runnable {
 	
 	/** How often the indexWriter will commit the new documents.*/
 	public static final int COMMIT_FREQUENCY = 10;
-	/** The index writer */
-	protected IndexWriter _index;
-	/** The directory that will write */
-	private Directory _directory;
-	/** The queue of documents to be indexed */
-	protected final BlockingQueue<Document> _queue;
-	CloudBlobContainer _container;
-	/** How many documents have been added since the last commit */
-	private int numberAdded = 0;
-	private volatile Thread _myThread = null;
 	
-	/**
-	 * Creates a new IndexerNode and create its thread
-	 * @param storageAccount the azure storageAccount to access the directory
-	 * @param containerName the name of the container in the storageAccount
-	 * @param queue the blockingQueue from where we will feed the documents to be indexed
-	 */
-	public Indexer(CloudStorageAccount storageAccount, String containerName, BlockingQueue<Document> queue) throws Exception {
+	public static final int NB_THREAD = 3;
+	/** The index writer */
+	protected static IndexWriter _index;
+	/** The directory that will write */
+	private static Directory _directory;
+	/** The queue of documents to be indexed */
+	protected static BlockingQueue<Document> _queue;
+	protected static CloudBlobContainer _container;
+	/** How many documents have been added since the last commit */
+	private volatile static int numberAdded = 0;
+	private volatile static long lastCommit = System.currentTimeMillis();
+	
+	protected int _idx;
+			
+	private static volatile Thread[] _threads = new Thread[NB_THREAD];
+	
+	public Indexer(int i) {
+		_idx = i;
+	}
+
+	public static void init(CloudStorageAccount storageAccount, String containerName, BlockingQueue<Document> queue) throws Exception {
 		_queue = queue;
 		CloudBlobClient client = storageAccount.createCloudBlobClient();
 		_container = client.getContainerReference(containerName);
@@ -89,7 +96,10 @@ public class Indexer implements Runnable {
 				_directory.clearLock("write.lock");
 			}
 		}
-		_myThread = new Thread(this);
+		
+		for (int i = 0; i < _threads.length; i++) {
+			_threads[i] = new Thread(new Indexer(i));
+		}
 	}
 	
 	/**
@@ -117,22 +127,29 @@ public class Indexer implements Runnable {
 	 * @param doc the document to be indexed
 	 * @throws IOException 
 	 */
-	protected void addDoc(Document doc) throws IOException {
+	protected synchronized void addDoc(Document doc) throws IOException {
 	    _index.addDocument(doc);
 	    numberAdded++;
 	    if (numberAdded % COMMIT_FREQUENCY == 0) {
 	    	_index.commit();
+	    	long commitTime = System.currentTimeMillis();
+	    	System.out.println(commitTime - lastCommit);
+	    	lastCommit = commitTime;
 	    }
 	    if (numberAdded % 100 == 0) {
 	    	LOGGER.info(numberAdded + " Document indexed");
 	    }
+	}
+	
+	public synchronized Thread isActive () {
+		return _threads[_idx];
 	}
 
 	@Override
 	public void run() {
 		LOGGER.info("indexer start");
 		Thread thisThread = Thread.currentThread();
-		while (_myThread == thisThread) {
+		while (thisThread == this.isActive()) {
 			try {
 				Document doc = _queue.take();
 				LOGGER.fine("indexing: " + doc.get("URI"));
@@ -148,11 +165,13 @@ public class Indexer implements Runnable {
 		}
 	}
 	
-	public void start() {
-		_myThread.start();
+	public static void start() {
+		for (int i = 0; i < _threads.length; i++) {
+			_threads[i].start();
+		}
 	}
 	
-	public void stop() throws IOException {
+	public static void stop() throws IOException {
 		//TODO make the indexWriter shutdown nicely
 		try {
 			_index.close();
@@ -164,6 +183,8 @@ public class Indexer implements Runnable {
 				IndexWriter.unlock(_directory);
 			}
 		}
-		_myThread = null;
+		for (int i = 0; i < _threads.length; i++) {
+			_threads[i] = null;
+		}
 	}
 }

@@ -55,7 +55,7 @@ public class IndexerNode extends Worker {
 	
 	public IndexerNode(CloudStorageAccount storageAccount, String container, String seed, int nbCrawlers, String storageFolder) throws Exception {
 		_queueDocs = new LinkedBlockingQueue<Document>(MAXDOCS);
-		_indexer = new Indexer(storageAccount, container, _queueDocs);
+		Indexer.init(storageAccount, container, _queueDocs);
 		_nbCrawlers = nbCrawlers;
 		_crawler = CrawlerController.NEW_Basic(seed, storageFolder, _queueDocs);
 		_myThread = new Thread(this);
@@ -81,7 +81,7 @@ public class IndexerNode extends Worker {
 	
 	@Override
 	public void run() {
-		_indexer.start();
+		Indexer.start();
 		_crawler.startNonBlocking(SiteCrawler.class, _nbCrawlers);
 	}
 	
@@ -89,7 +89,7 @@ public class IndexerNode extends Worker {
 	public void stop() throws IOException {
 		_myThread = null;
 		_crawler.Shutdown();
-		_indexer.stop();
+		Indexer.stop();
 	}
 	
 	public void start() {
