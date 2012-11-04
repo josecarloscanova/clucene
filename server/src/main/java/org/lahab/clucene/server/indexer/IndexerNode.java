@@ -43,8 +43,6 @@ public class IndexerNode extends Worker {
 	public static int MAXDOCS = 10;
 	/** The directory where the index is written when we download it */
 	public static String DOWNLOAD_DIR = null;
-	/** The indexer thread */
-	protected Indexer _indexer;
 	/** The crawler thread */
 	protected CrawlerController _crawler;
 	/** The number of crawling threads */
@@ -53,9 +51,9 @@ public class IndexerNode extends Worker {
 	protected BlockingQueue<Document> _queueDocs;
 	private volatile Thread _myThread;
 	
-	public IndexerNode(CloudStorageAccount storageAccount, String container, String seed, int nbCrawlers, String storageFolder) throws Exception {
+	public IndexerNode(CloudStorageAccount storageAccount, String container, String seed, int nbCrawlers, String storageFolder, String dirFolder) throws Exception {
 		_queueDocs = new LinkedBlockingQueue<Document>(MAXDOCS);
-		Indexer.init(storageAccount, container, _queueDocs);
+		Indexer.init(storageAccount, container, _queueDocs, dirFolder);
 		_nbCrawlers = nbCrawlers;
 		_crawler = CrawlerController.NEW_Basic(seed, storageFolder, _queueDocs);
 		_myThread = new Thread(this);
@@ -63,7 +61,10 @@ public class IndexerNode extends Worker {
 	
 	public IndexerNode(Configuration _config) throws Exception {
 		this(_config.getStorageAccount(), _config.getContainer(),
-			 _config.getSeed(), _config.getNbCrawler(), _config.getCrawlerFolder());
+			 _config.getSeed(), _config.getNbCrawler(), _config.getCrawlerFolder(), _config.getDirFolder());
+		Indexer.COMMIT_FREQUENCY = _config.getCommitFreq();
+		Indexer.NB_THREAD = _config.getNbIndexer();
+		IndexerNode.DOWNLOAD_DIR = _config.getDownloadDir();
 		SiteCrawler.DOMAIN = _config.getCrawlerDomain();
 	}
 
@@ -75,7 +76,7 @@ public class IndexerNode extends Worker {
 	public void download() throws Exception {
 		//TODO add a way to suspend/resuming the indexing when downloading
 		//_crawler.wait();
-		_indexer.download(DOWNLOAD_DIR);
+		Indexer.download(DOWNLOAD_DIR);
 		//_crawler.notify();
 	}
 	

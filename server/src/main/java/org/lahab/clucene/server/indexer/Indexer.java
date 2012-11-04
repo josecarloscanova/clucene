@@ -24,16 +24,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URISyntaxException;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
@@ -44,7 +43,6 @@ import com.microsoft.windowsazure.services.blob.client.CloudBlobContainer;
 import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
 import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
 import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
-import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 /**
  * A thread that will index the documents given in the queue to a AzureBlobStorage
@@ -77,11 +75,11 @@ public class Indexer implements Runnable {
 		_idx = i;
 	}
 
-	public static void init(CloudStorageAccount storageAccount, String containerName, BlockingQueue<Document> queue) throws Exception {
+	public static void init(CloudStorageAccount storageAccount, String containerName, BlockingQueue<Document> queue, String dirFolder) throws Exception {
 		_queue = queue;
 		CloudBlobClient client = storageAccount.createCloudBlobClient();
 		_container = client.getContainerReference(containerName);
-	    _directory = new BlobDirectoryFS(storageAccount, containerName, new RAMDirectory());
+	    _directory = new BlobDirectoryFS(storageAccount, containerName, FSDirectory.open(new File(dirFolder)));
 
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 	    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_36, analyzer);
@@ -107,19 +105,21 @@ public class Indexer implements Runnable {
 	 * @param downloadDir the directory where the index will be copied to
 	 * @throws Exception
 	 */
-	public void download(String downloadDir) throws Exception {
+	public static void download(String downloadDir) throws Exception {
+		stop();
 		final File[] files = new File(downloadDir).listFiles();
 		for (File f: files) f.delete();
 
 		for (ListBlobItem blobItem : _container.listBlobs()) {
 		    CloudBlockBlob b = _container.getBlockBlobReference(blobItem.getUri().toString());
-		    File f = new File("../index/cloud/"+ b.getName());
+		    File f = new File(downloadDir + "/" + b.getName());
 		    if (!f.exists()) {
 		    	f.createNewFile();
 		    }
 		    OutputStream outStream = new FileOutputStream(f);
 		    b.download(outStream);
 		}
+		start();
 	}
 	
 	/**

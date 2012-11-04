@@ -162,5 +162,8 @@ public class Configuration {
 	public String getCrawlerDomain() {
 		return _crawlerConf.getString("domain");
 	}
+	public String getDirFolder() {
+		return _nodeConf.getString("directoryFolder");
+	}
 
 }
