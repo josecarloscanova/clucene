@@ -24,7 +24,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -34,7 +38,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.lahab.clucene.core.BlobDirectoryFS;
 
@@ -57,33 +60,49 @@ public class Indexer implements Runnable {
 	
 	public static int NB_THREAD = 3;
 	/** The index writer */
-	protected static IndexWriter _index;
+	protected IndexWriter _index;
 	/** The directory that will write */
-	private static Directory _directory;
+	private Directory _directory;
 	/** The queue of documents to be indexed */
-	protected static BlockingQueue<Document> _queue;
-	protected static CloudBlobContainer _container;
+	protected BlockingQueue<Document> _queue;
+	protected CloudBlobContainer _container;
 	/** How many documents have been added since the last commit */
 	private volatile static int numberAdded = 0;
 	private volatile static long lastCommit = System.currentTimeMillis();
 	
-	protected int _idx;
-			
-	private static volatile Thread[] _threads = new Thread[NB_THREAD];
+	protected ExecutorService _pool;
+
+	private Thread _thread;
 	
-	public Indexer(int i) {
-		_idx = i;
+	protected class AddDocumentJob implements Runnable {
+		Document _doc;
+		public AddDocumentJob(Document doc) {
+			_doc = doc;
+		}
+		public void run() {
+			try {
+				_index.addDocument(_doc);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
 	}
 
-	public static void init(CloudStorageAccount storageAccount, String containerName, BlockingQueue<Document> queue, String dirFolder) throws Exception {
+	public static boolean IS_REGULAR = false;
+
+	public void init(CloudStorageAccount storageAccount, String containerName, BlockingQueue<Document> queue, String dirFolder) throws Exception {
 		_queue = queue;
 		CloudBlobClient client = storageAccount.createCloudBlobClient();
 		_container = client.getContainerReference(containerName);
-	    _directory = new BlobDirectoryFS(storageAccount, containerName, FSDirectory.open(new File(dirFolder)));
-
+		if (IS_REGULAR) {
+			_directory = FSDirectory.open(new File(dirFolder));
+		} else {
+			_directory = new BlobDirectoryFS(storageAccount, containerName, FSDirectory.open(new File(dirFolder)));
+		}
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 	    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_36, analyzer);
 	    config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+	    
 		_index = null;
 		// Sometimes azure refuses to give us a lock the first time so we try again
 		while (_index == null) {
@@ -94,10 +113,8 @@ public class Indexer implements Runnable {
 				_directory.clearLock("write.lock");
 			}
 		}
-		
-		for (int i = 0; i < _threads.length; i++) {
-			_threads[i] = new Thread(new Indexer(i));
-		}
+		startPool();
+		_thread = new Thread(this);
 	}
 	
 	/**
@@ -105,8 +122,8 @@ public class Indexer implements Runnable {
 	 * @param downloadDir the directory where the index will be copied to
 	 * @throws Exception
 	 */
-	public static void download(String downloadDir) throws Exception {
-		stop();
+	public void download(String downloadDir) throws Exception {
+		finish();
 		final File[] files = new File(downloadDir).listFiles();
 		for (File f: files) f.delete();
 
@@ -119,38 +136,43 @@ public class Indexer implements Runnable {
 		    OutputStream outStream = new FileOutputStream(f);
 		    b.download(outStream);
 		}
-		start();
+		startPool();
 	}
 	
+	protected void startPool() {
+		_pool = new ThreadPoolExecutor(NB_THREAD, NB_THREAD, 0, TimeUnit.SECONDS,
+										new ArrayBlockingQueue<Runnable>(NB_THREAD * 4 + 1, false),
+										new ThreadPoolExecutor.CallerRunsPolicy());
+	}
+
 	/**
 	 * Add a document to the index and commits if necessary
 	 * @param doc the document to be indexed
 	 * @throws IOException 
 	 */
 	protected void addDoc(Document doc) throws IOException {
-	    _index.addDocument(doc);
+	    _pool.execute(new AddDocumentJob(doc));
 	    numberAdded++;
 	    if (numberAdded % COMMIT_FREQUENCY == 0) {
+	    	finish();
 	    	_index.commit();
 	    	long commitTime = System.currentTimeMillis();
 	    	System.out.println(commitTime - lastCommit);
 	    	lastCommit = commitTime;
+	    	startPool();
 	    }
 	    if (numberAdded % 100 == 0) {
 	    	LOGGER.info(numberAdded + " Document indexed");
 	    }
-	}
-	
-	public synchronized Thread isActive () {
-		return _threads[_idx];
 	}
 
 	@Override
 	public void run() {
 		LOGGER.info("indexer start");
 		Thread thisThread = Thread.currentThread();
-		while (thisThread == this.isActive()) {
+		while (thisThread == _thread) {
 			try {
+				System.out.println("taking" + _queue.size());
 				Document doc = _queue.take();
 				LOGGER.fine("indexing: " + doc.get("URI"));
 				this.addDoc(doc);
@@ -165,13 +187,12 @@ public class Indexer implements Runnable {
 		}
 	}
 	
-	public static void start() {
-		for (int i = 0; i < _threads.length; i++) {
-			_threads[i].start();
-		}
+	public void start() {
+		_thread.start();
 	}
 	
-	public static void stop() throws IOException {
+	public void stop() throws IOException {
+		_thread = null;
 		//TODO make the indexWriter shutdown nicely
 		try {
 			_index.close();
@@ -183,8 +204,20 @@ public class Indexer implements Runnable {
 				IndexWriter.unlock(_directory);
 			}
 		}
-		for (int i = 0; i < _threads.length; i++) {
-			_threads[i] = null;
+
+	}
+	
+	protected void finish() {
+		_pool.shutdown();
+		while (true) {
+			try {
+				if (_pool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS)) {
+					break;
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }

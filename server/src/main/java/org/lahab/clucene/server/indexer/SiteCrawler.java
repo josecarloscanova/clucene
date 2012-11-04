@@ -70,8 +70,8 @@ public class SiteCrawler extends WebCrawler {
     		
         	String content = htmlParseData.getText();
         	LOGGER.finest("Text extracted:" + content);
-    		doc.add(new Field("content", content, 
-					  		  Field.Store.NO, Field.Index.ANALYZED));
+    		/*doc.add(new Field("content", content, 
+					  		  Field.Store.NO, Field.Index.ANALYZED));*/
     		String title = htmlParseData.getTitle();
         	LOGGER.finer("Title extracted:" + title);			
     		doc.add(new Field("title", title,
@@ -82,6 +82,7 @@ public class SiteCrawler extends WebCrawler {
 			try {
 				CrawlController myController = this.getMyController();
 				if (myController instanceof CrawlerController) {
+					System.out.println("putting" + ((CrawlerController) myController).getQueue().size());
 					((CrawlerController) myController).getQueue().put(doc);
 				} else {
 					assert false;

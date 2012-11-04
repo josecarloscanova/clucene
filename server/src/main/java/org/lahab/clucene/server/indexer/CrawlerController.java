@@ -51,6 +51,7 @@ public class CrawlerController extends CrawlController {
 	 */
 	public static CrawlerController NEW_Basic(String seed, String storageFolder, BlockingQueue<Document> queue) throws Exception {
 		CrawlConfig config = new CrawlConfig();
+		config.setPolitenessDelay(50);
         config.setCrawlStorageFolder(storageFolder);
         
         PageFetcher pageFetcher = new PageFetcher(config);

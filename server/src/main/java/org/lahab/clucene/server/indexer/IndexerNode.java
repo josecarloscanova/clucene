@@ -29,7 +29,6 @@ import org.apache.lucene.document.Document;
 import org.lahab.clucene.server.Worker;
 import org.lahab.clucene.server.utils.Configuration;
 
-import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
 
 /**
  * A thread that will start crawling and indexing documents
@@ -51,21 +50,20 @@ public class IndexerNode extends Worker {
 	protected BlockingQueue<Document> _queueDocs;
 	private volatile Thread _myThread;
 	
-	public IndexerNode(CloudStorageAccount storageAccount, String container, String seed, int nbCrawlers, String storageFolder, String dirFolder) throws Exception {
-		_queueDocs = new LinkedBlockingQueue<Document>(MAXDOCS);
-		Indexer.init(storageAccount, container, _queueDocs, dirFolder);
-		_nbCrawlers = nbCrawlers;
-		_crawler = CrawlerController.NEW_Basic(seed, storageFolder, _queueDocs);
-		_myThread = new Thread(this);
-	}
+	protected Indexer _indexer;
 	
 	public IndexerNode(Configuration _config) throws Exception {
-		this(_config.getStorageAccount(), _config.getContainer(),
-			 _config.getSeed(), _config.getNbCrawler(), _config.getCrawlerFolder(), _config.getDirFolder());
 		Indexer.COMMIT_FREQUENCY = _config.getCommitFreq();
 		Indexer.NB_THREAD = _config.getNbIndexer();
 		IndexerNode.DOWNLOAD_DIR = _config.getDownloadDir();
+		Indexer.IS_REGULAR = _config.isRegular();
 		SiteCrawler.DOMAIN = _config.getCrawlerDomain();
+		_queueDocs = new LinkedBlockingQueue<Document>(MAXDOCS);
+		_nbCrawlers = _config.getNbCrawler();
+		_crawler = CrawlerController.NEW_Basic(_config.getSeed(), _config.getCrawlerFolder(), _queueDocs);
+		_indexer = new Indexer();
+		_indexer.init(_config.getStorageAccount(), _config.getContainer(), _queueDocs, _config.getDirFolder());
+		_myThread = new Thread(this);
 	}
 
 	/**
@@ -76,13 +74,13 @@ public class IndexerNode extends Worker {
 	public void download() throws Exception {
 		//TODO add a way to suspend/resuming the indexing when downloading
 		//_crawler.wait();
-		Indexer.download(DOWNLOAD_DIR);
+		_indexer.download(DOWNLOAD_DIR);
 		//_crawler.notify();
 	}
 	
 	@Override
 	public void run() {
-		Indexer.start();
+		_indexer.start();
 		_crawler.startNonBlocking(SiteCrawler.class, _nbCrawlers);
 	}
 	
@@ -90,7 +88,7 @@ public class IndexerNode extends Worker {
 	public void stop() throws IOException {
 		_myThread = null;
 		_crawler.Shutdown();
-		Indexer.stop();
+		_indexer.stop();
 	}
 	
 	public void start() {

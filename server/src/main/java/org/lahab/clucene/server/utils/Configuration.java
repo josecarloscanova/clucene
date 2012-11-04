@@ -165,5 +165,12 @@ public class Configuration {
 	public String getDirFolder() {
 		return _nodeConf.getString("directoryFolder");
 	}
+	
+	public boolean isRegular() {
+		if (_nodeConf.containsKey("regular")) {
+			return _nodeConf.getBoolean("regular");
+		}
+		return false;
+	}
 
 }
