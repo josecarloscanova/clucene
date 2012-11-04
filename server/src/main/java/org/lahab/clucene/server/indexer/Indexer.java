@@ -127,7 +127,7 @@ public class Indexer implements Runnable {
 	 * @param doc the document to be indexed
 	 * @throws IOException 
 	 */
-	protected synchronized void addDoc(Document doc) throws IOException {
+	protected void addDoc(Document doc) throws IOException {
 	    _index.addDocument(doc);
 	    numberAdded++;
 	    if (numberAdded % COMMIT_FREQUENCY == 0) {
