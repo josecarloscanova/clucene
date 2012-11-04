@@ -64,6 +64,7 @@
   <modules>
     <module>server</module>
     <module>core</module>
+    <module>siteConstructor</module>
   </modules>
   <dependencyManagement>
   	<dependencies>
@@ -148,7 +149,7 @@
 	  								</goals>
 	  							</pluginExecutionFilter>
 	  							<action>
-	  								<ignore></ignore>
+	  								<ignore/>
 	  							</action>
 	  						</pluginExecution>
 	  					</pluginExecutions>
