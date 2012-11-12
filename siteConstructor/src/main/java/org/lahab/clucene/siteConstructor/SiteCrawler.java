@@ -46,11 +46,10 @@ public class SiteCrawler extends WebCrawler {
 	
 	@Override
 	public void visit(Page page) {
-		String url = page.getWebURL().getURL();
-		LOGGER.info("crawl:" + url);
-		
         try {
-			Main.addData(page.getWebURL().getPath(), page.getContentData());
+        	String name = page.getWebURL().getPath().replaceAll("/", "_");
+        	LOGGER.info("crawl:" + name);
+			Main.addData(name, page.getContentData());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

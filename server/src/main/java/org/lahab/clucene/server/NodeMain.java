@@ -1,5 +1,7 @@
 package org.lahab.clucene.server;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
@@ -11,7 +13,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.lahab.clucene.server.indexer.IndexerNode;
 import org.lahab.clucene.server.searcher.SearcherNode;
+import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
+import org.lahab.clucene.server.utils.Parametizer;
 
 
 /*
@@ -41,6 +45,14 @@ public class NodeMain {
 	public static Configuration _config;
 	public static Worker _worker;
 	public static Server _server;
+	public static CloudStorage _cloudStorage;
+	
+	public static Parametizer _params;
+
+	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+	static {
+		DEFAULTS.put("port", 7050);
+	}
 	
 	public static void main(String[] args) throws Exception {
 		// Retrieve storage account from connection-string
@@ -49,28 +61,39 @@ public class NodeMain {
 				CONFIG_FILE = args[0];
 			}
 			_config = new Configuration(CONFIG_FILE);
-			
 		}
-		_config.configure();
+
 		HttpServlet servlet = null;
-		String path = null;		
+		String path = null;
+
+		_params = new Parametizer(DEFAULTS, _config);		
+		_cloudStorage = new CloudStorage(_config.get("azure"));
 		// Creates an indexer or a searcher depending on the configuration
-		if (_config.isIndexer()) {
+		boolean isIndexer = false;
+		if (_config.containsKey("indexer") ^ _config.containsKey("searcher")) {
+			isIndexer = _config.containsKey("indexer");
+		} else {
+			throw new Exception("Your configuration file must contain either the configuration " +
+								"for an indexer or for a searcher " +
+								"it can't contain both");
+		}
+		if (isIndexer) {
 			LOGGER.info("starting indexer node");
-			IndexerNode indexer = new IndexerNode(_config);
+			IndexerNode indexer = new IndexerNode(_cloudStorage, _config.get("indexer"));
 			servlet = new IndexServlet(indexer);
 			path = IndexServlet.PATH;
 			_worker = indexer;
 		} else {
 			LOGGER.info("starting searcher node");
-			SearcherNode searcher = new SearcherNode(_config);
+			SearcherNode searcher = new SearcherNode(_cloudStorage, _config.get("searcher"));
 			servlet = new SearchServlet(searcher);
 			path = SearchServlet.PATH;
 			_worker = searcher;
 		}
 		
-	    _server = new Server(_config.getPort());
-        
+	    _server = new Server(_params.getInt("port"));
+        _server.setGracefulShutdown(10000);
+        _server.setStopAtShutdown(true);
 	    // Creates the servlet for whatever our node is up to
         ServletContextHandler contextIndex = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextIndex.setContextPath(path);
@@ -107,7 +130,6 @@ public class NodeMain {
 	 */
 	protected static void shutdown() throws Exception {
 		LOGGER.info("Shuting down the server");
-		_server.stop();
 		_worker.stop();
 		LOGGER.info("Server off");
 	}

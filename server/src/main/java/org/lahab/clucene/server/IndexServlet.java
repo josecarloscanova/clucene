@@ -61,7 +61,7 @@ public class IndexServlet extends HttpServlet {
         
         if (request.getRequestURI().equals(PATH + "/start")) {
         	LOGGER.finer("start");
-			_indexer.run();
+			_indexer.start();
 			response.getWriter().write("Indexer started");
         } else if (request.getRequestURI().equals(PATH + "/stop")) {
         	LOGGER.finer("stop");

@@ -47,6 +47,7 @@ public class Main {
 	public static JSONObject _config;
 	public static CloudStorageAccount _storageAccount = null;
 	public static CloudBlobContainer _container;
+	public static volatile long size = 0;
 	/**
 	 * @param args
 	 * @throws Exception 
@@ -60,7 +61,7 @@ public class Main {
 		}
 		
 		CrawlConfig config = new CrawlConfig();
-		config.setPolitenessDelay(150);
+		config.setPolitenessDelay(100);
         config.setCrawlStorageFolder(_config.getString("storageFolder"));
         config.setMaxPagesToFetch(_config.getInt("maxPagesToFetch"));
         
@@ -94,7 +95,9 @@ public class Main {
 	public static void addData(String name, byte[] html) throws Exception {
 		CloudBlockBlob blob = _container.getBlockBlobReference(name);
 		
+		size += 1;
 		InputStream source = new ByteArrayInputStream(html);
+		System.out.println("Size of Blob:" + size);
 		blob.upload(source, html.length);
 	}
 }

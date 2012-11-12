@@ -1,4 +1,4 @@
-package org.lahab.clucene.server;
+package org.lahab.clucene.server.indexer;
 
 /*
  * #%L
@@ -20,16 +20,19 @@ package org.lahab.clucene.server;
  * #L%
  */
 
-import java.io.IOException;
+import org.apache.lucene.document.Document;
 
-public abstract class Worker {
-
-	/** 
-	 * Gracefully stops the indexing
-	 * @throws IOException 
-	 */
-	abstract public void stop() throws IOException;
-
-	abstract public void start() throws IOException;
-
+public class DocumentIndexer implements Runnable {
+	public static Indexer INDEX;
+	Document _doc;
+	public DocumentIndexer(Document doc) {
+		_doc = doc;
+	}
+	public void run() {
+		try {
+			INDEX.addDoc(_doc);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

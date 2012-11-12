@@ -1,4 +1,4 @@
-package org.lahab.clucene.server;
+package org.lahab.clucene.server.utils;
 
 /*
  * #%L
@@ -20,16 +20,23 @@ package org.lahab.clucene.server;
  * #L%
  */
 
-import java.io.IOException;
+/** 
+ * This provides a container to record statistics using a statRecorder
+ * @author charlymolter
+ *
+ */
+public interface Statable {
 
-public abstract class Worker {
-
-	/** 
-	 * Gracefully stops the indexing
-	 * @throws IOException 
+	
+	/**
+	 * The tile of each statistic that will be recorder for the header of the file
+	 * @return
 	 */
-	abstract public void stop() throws IOException;
-
-	abstract public void start() throws IOException;
-
+	String[] header();
+	
+	/** 
+	 * This method should return a vector of stats that should be recorded in the stat file 
+	 * 
+	 */
+	String[] record();
 }

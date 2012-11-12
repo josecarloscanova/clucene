@@ -28,18 +28,26 @@ A configuration file look like:
 A node can either be an indexer (will crawl and index document) or a searcher (will search queries sent to it). To set that just change the configuration file to right node.
 
 For an indexer:
-
-    "indexer": {
-        "crawler": {
-            "folder": "where crawler4j will put the data",
-            "seed": "http://en.wikipedia.org",
-            "domain": "http://en.wikipedia.org", // Sticks to the pages starting with
-            "nbCrawler": 2
-        },
-        "downloadFolder": "../index/cloud",
-        nbThread: 3,
-        commitFreq: 100
-    } 
+		"indexer": {
+			"crawler": {
+				"container": "where on azure the documents are stored",
+				"queueSize": "The maximum number of processes that analyze a document in the thread pool",
+				"nbThreads": "The number of threads allocated to parsing documents"
+			},
+			"indexer": {
+				"commitFrequency": "how often we commit the new documents",
+				"folder": "if you use a FS lucene directory where to put the directory",
+				"regular": "if you don't want to use an azure directory (for stats for example)",
+				"container": "the azure blob where the directory is stored",
+				"queueSize": "The maximum number of processes that index document",
+				"nbThreads": "The number of threads allocated to indexing documents"
+			},
+			"downloadDir": "Where to download the directory",
+			"stats": {
+				"file": "where to write the stats report",
+				"frequency": "How often in ms we create a snapshot of the system status",
+			}
+		}
 
 For a searcher:
 
@@ -65,6 +73,13 @@ Once your configuration file is written you can either put it next to your execu
 
 ## Using the searcher
 
+
+## TODOs
+
+This is a list of things that can be improved:
+*		add much more unit tests
+*		justify the use of mutexes in DirectoryFS
+*		add compression on the nodes
 ------------------------
 
 We use Travis for continuous integration! 

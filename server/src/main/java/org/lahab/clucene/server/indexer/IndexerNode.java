@@ -21,13 +21,19 @@ package org.lahab.clucene.server.indexer;
  */
 
 import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
-import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
 import org.lahab.clucene.server.Worker;
+import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
+import org.lahab.clucene.server.utils.Parametizer;
+import org.lahab.clucene.server.utils.ParametizerException;
+import org.lahab.clucene.server.utils.StatRecorder;
+import org.lahab.clucene.server.utils.Statable;
+
 
 
 /**
@@ -37,33 +43,39 @@ import org.lahab.clucene.server.utils.Configuration;
  */
 public class IndexerNode extends Worker {
 	public final static Logger LOGGER = Logger.getLogger(IndexerNode.class.getName());
-	
-	/** The maximum documents in the queue that are parsed but not indexed yet */
-	public static int MAXDOCS = 10;
-	/** The directory where the index is written when we download it */
-	public static String DOWNLOAD_DIR = null;
+
 	/** The crawler thread */
-	protected CrawlerController _crawler;
-	/** The number of crawling threads */
-	protected int _nbCrawlers;
-	/** The queue that links the crawler with the indexer */
-	protected BlockingQueue<Document> _queueDocs;
-	private volatile Thread _myThread;
+	protected BlobParser _crawler;
+	
+	protected PoolManager _pool;
 	
 	protected Indexer _indexer;
 	
-	public IndexerNode(Configuration _config) throws Exception {
-		Indexer.COMMIT_FREQUENCY = _config.getCommitFreq();
-		Indexer.NB_THREAD = _config.getNbIndexer();
-		IndexerNode.DOWNLOAD_DIR = _config.getDownloadDir();
-		Indexer.IS_REGULAR = _config.isRegular();
-		SiteCrawler.DOMAIN = _config.getCrawlerDomain();
-		_queueDocs = new LinkedBlockingQueue<Document>(MAXDOCS);
-		_nbCrawlers = _config.getNbCrawler();
-		_crawler = CrawlerController.NEW_Basic(_config.getSeed(), _config.getCrawlerFolder(), _queueDocs);
-		_indexer = new Indexer();
-		_indexer.init(_config.getStorageAccount(), _config.getContainer(), _queueDocs, _config.getDirFolder());
-		_myThread = new Thread(this);
+	protected StatRecorder _stats = null;
+	
+	public Parametizer _params;
+	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+	static {
+		DEFAULTS.put("downloadDir", "download");
+		DEFAULTS.put("stats.file", "statsIndexerNode.csv");
+		DEFAULTS.put("stats.frequency", 1000);
+		DEFAULTS.put("stats", true);
+	}
+	
+	public IndexerNode(CloudStorage storage, Configuration config) throws Exception {
+		_params = new Parametizer(DEFAULTS, config);
+		
+		_indexer = new Indexer(storage, config.get("indexer"));
+		DocumentIndexer.INDEX = _indexer;
+		
+		_pool = new PoolManager(config);
+		_crawler = new BlobParser(storage, _pool, config.get("crawler"));
+		
+		Statable[] statables = {(Statable) _indexer, (Statable) _crawler, (Statable) _pool};
+		if (_params.getBoolean("stats")) {
+			_stats = new StatRecorder(_params.getString("stats.file"), 
+									  _params.getInt("stats.frequency"), statables);
+		}
 	}
 
 	/**
@@ -73,26 +85,36 @@ public class IndexerNode extends Worker {
 	 */
 	public void download() throws Exception {
 		//TODO add a way to suspend/resuming the indexing when downloading
-		//_crawler.wait();
-		_indexer.download(DOWNLOAD_DIR);
-		//_crawler.notify();
+		_indexer.download(_params.getString("downloadDir"));
 	}
 	
-	@Override
-	public void run() {
-		_indexer.start();
-		_crawler.startNonBlocking(SiteCrawler.class, _nbCrawlers);
+	public void start() throws CorruptIndexException, IOException {
+		_indexer.open();
+		try {
+			if (_params.getBoolean("stats")) {
+				_stats.start();
+			}
+		} catch (ParametizerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		_crawler.start();
 	}
 	
 
 	public void stop() throws IOException {
-		_myThread = null;
-		_crawler.Shutdown();
-		_indexer.stop();
-	}
-	
-	public void start() {
-		_myThread.start();
+		_crawler.stop();
+		_pool.shutdown();
+		_indexer.close();
+		try {
+			if (_params.getBoolean("stats")) {
+				_stats.stop();
+			}
+		} catch (ParametizerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		LOGGER.info("Indexer node stoped");
 	}
 	
 	

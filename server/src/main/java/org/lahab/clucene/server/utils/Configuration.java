@@ -24,17 +24,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.commons.io.IOUtils;
 
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
-import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
 
 /**
  * This class parses a configuration file and make every parameter available
@@ -44,12 +39,6 @@ import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
  */
 public class Configuration {
 	protected JSONObject _config = null;
-	protected CloudStorageAccount _storageAccount = null;
-	protected JSONObject _azureConf = null;
-	protected JSONObject _crawlerConf = null;
-	protected JSONObject _loggingConf = null;
-	protected JSONObject _nodeConf = null;
-	protected boolean _isIndexer;
 	
 	/**
 	 * Parses the file and extracts each category of configuration
@@ -58,25 +47,10 @@ public class Configuration {
 	 */
 	public Configuration(String configFile) throws Exception {
 		_config = parseConfig(configFile);
-		_azureConf = _config.getJSONObject("azure");
-		if (_config.containsKey("logging")) {
-			_loggingConf = _config.getJSONObject("logging");
-		}
-		if (_config.containsKey("indexer") ^ _config.containsKey("searcher")) {
-			if (_config.containsKey("indexer")) {
-				_isIndexer = true;
-				_nodeConf = _config.getJSONObject("indexer");
-				_crawlerConf = _nodeConf.getJSONObject("crawler");
-			} else {
-				_isIndexer = false;
-				_nodeConf = _config.getJSONObject("searcher");
-			}
-		} else {
-			throw new Exception("Your configuration file must contain either the configuration " +
-								"for an indexer or for a searcher " +
-								"it can't contain both");
-		}
-		
+	}
+	
+	public Configuration(JSONObject config) {
+		_config = config;
 	}
 	/** 
 	 * Extracts the configuration from the json file specified by CONFIG_FILE 
@@ -89,88 +63,55 @@ public class Configuration {
         return (JSONObject) JSONSerializer.toJSON(jsonTxt);
 	}
 	
-	/**
-	 * Actually applies and load the configuration
-	 * @throws InvalidKeyException
-	 * @throws URISyntaxException
-	 */
-	public void configure() throws InvalidKeyException, URISyntaxException {
-		configureLogging();
-	}
-	
-	/**
-	 * Set all the necessary logging for each object;
-	 */
-	protected void configureLogging() {
-		java.util.logging.Handler[] handlers =
-	    		Logger.getLogger( "" ).getHandlers();
-	    for ( int index = 0; index < handlers.length; index++ ) {
-	    	handlers[index].setLevel( Level.FINEST );
-	    }
-	    // TODO find a nice way to change the logging from the config file
-	}
-	
-	public String getContainer() {
-		return _azureConf.getString("container");
-	}
-	
-	public CloudStorageAccount getStorageAccount() throws InvalidKeyException, URISyntaxException {
-		return CloudStorageAccount.parse("DefaultEndpointsProtocol="+ 
-				   						 _azureConf.getString("defaultEndpointsProtocol") +
-				   						 ";AccountName=" +
-				   						 _azureConf.getString("accountName") +
-				   						 ";AccountKey=" +
-				   						 _azureConf.getString("accountKey") + ";");
-	}
-	
-	public String getCrawlerFolder() {
-		return _crawlerConf.getString("folder");
-	}
-	
-	public String getSeed() {
-		return _crawlerConf.getString("seed");
-	}
-	
-	public int getNbCrawler() {
-		return _crawlerConf.getInt("nbCrawler");
-	}
-	
-	public int getNbIndexer() {
-		return _nodeConf.getInt("nbThread");
-	}
-	
-	public int getCommitFreq() {
-		return _nodeConf.getInt("commitFreq");
-	}
-	
-	public JSONObject getMainConfig() {
-		return _config;
-	}
-	
-	public int getPort() {
-		return _config.getInt("port");
-	}
-	
-	public String getDownloadDir() {
-		return _nodeConf.getString("downloadFolder");
-	}
-	
-	public boolean isIndexer() {
-		return _isIndexer;
-	}
-	
-	public String getCrawlerDomain() {
-		return _crawlerConf.getString("domain");
-	}
-	public String getDirFolder() {
-		return _nodeConf.getString("directoryFolder");
-	}
-	
-	public boolean isRegular() {
-		if (_nodeConf.containsKey("regular")) {
-			return _nodeConf.getBoolean("regular");
+	public boolean containsKey(String key) {
+		String[] keys = key.split("\\.");
+		if (keys.length == 0) {
+			return _config.containsKey(key);
 		}
-		return false;
+		JSONObject elt = _config; 
+		for (int i = 0; i < keys.length - 1; i++) {
+			if (elt.containsKey(keys[i]) && elt.get(keys[i]) instanceof JSONObject) {
+				elt = elt.getJSONObject(keys[i]);
+			} else {
+				return false;
+			}
+
+		}
+		return elt.containsKey(keys[keys.length - 1]);
+	}
+	
+	public Configuration get(String key) throws Exception {
+		if (!isCompound(key)) {
+			throw new Exception("Key: \"" + key + "\" is not a compound");
+		}
+		return new Configuration((JSONObject)navigateDown(key));
+	}
+	
+	public Object getObj(String key) throws Exception {
+		return navigateDown(key);
+	}
+	
+	public boolean isCompound(String key) throws Exception {
+		return navigateDown(key) instanceof JSONObject;
 	}
 
+	protected Object navigateDown(String key) throws Exception {
+		String[] keys = key.split("\\.");
+		if (keys.length == 0) {
+			return _config.get(key);
+		}
+		JSONObject elt = _config; 
+		for (int i = 0; i < keys.length - 1; i++) {
+			if (elt.containsKey(keys[i]) && elt.get(keys[i]) instanceof JSONObject) {
+				elt = elt.getJSONObject(keys[i]);
+			} else {
+				throw new Exception("Key: \"" + keys[i] + "\" is not a compound can't go more down");
+			}	
+		}
+		if (elt.containsKey(keys[keys.length - 1])) {
+			return elt.get(keys[keys.length - 1]);
+		} else {
+			throw new Exception("Key: \"" + keys[keys.length - 1] + "\" doesn't exist");
+		}
+	}
 }

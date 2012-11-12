@@ -1,4 +1,4 @@
-package org.lahab.clucene.server;
+package org.lahab.clucene.server.utils;
 
 /*
  * #%L
@@ -20,16 +20,11 @@ package org.lahab.clucene.server;
  * #L%
  */
 
-import java.io.IOException;
+public class ParametizerException extends Exception {
 
-public abstract class Worker {
-
-	/** 
-	 * Gracefully stops the indexing
-	 * @throws IOException 
+	/**
+	 * 
 	 */
-	abstract public void stop() throws IOException;
-
-	abstract public void start() throws IOException;
+	private static final long serialVersionUID = 1L;
 
 }

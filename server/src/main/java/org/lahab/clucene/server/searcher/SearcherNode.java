@@ -1,6 +1,8 @@
 package org.lahab.clucene.server.searcher;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -16,12 +18,9 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.lahab.clucene.core.BlobDirectoryFS;
 import org.lahab.clucene.server.Worker;
+import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
-
-import com.microsoft.windowsazure.services.blob.client.CloudBlobClient;
-import com.microsoft.windowsazure.services.blob.client.CloudBlobContainer;
-import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
-
+import org.lahab.clucene.server.utils.Parametizer;
 /*
  * #%L
  * client
@@ -52,14 +51,20 @@ public class SearcherNode extends Worker {
 	protected IndexSearcher _index = null;
 	/** The directory that will write */
 	private Directory _directory;
-	CloudBlobContainer _container;
-
 	private QueryParser _parser;
 	
-	public SearcherNode(CloudStorageAccount storageAccount, String containerName) throws Exception {
-		CloudBlobClient client = storageAccount.createCloudBlobClient();
-		_container = client.getContainerReference(containerName);
-	    _directory = new BlobDirectoryFS(storageAccount, containerName, new RAMDirectory());
+	public Parametizer _params;
+	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+	static {
+		DEFAULTS.put("container", "clucene");
+		DEFAULTS.put("stats", false);
+	}
+	
+	public SearcherNode(CloudStorage _cloudStorage, Configuration configuration) throws Exception {
+		_params = new Parametizer(DEFAULTS, configuration);
+		String containerName = _params.getString("container");
+		_cloudStorage.addContainer("directory", containerName);
+	    _directory = new BlobDirectoryFS(_cloudStorage.getAccount(), containerName, new RAMDirectory());
 
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 		IndexReader reader = IndexReader.open(_directory);
@@ -67,13 +72,8 @@ public class SearcherNode extends Worker {
 		_index = new IndexSearcher(reader);
 		_parser = new QueryParser(Version.LUCENE_36, "content", analyzer);
 	}
-
-	public SearcherNode(Configuration _config) throws Exception {
-		this(_config.getStorageAccount(), _config.getContainer());
-	}
 	
 	public Document[] search(String str) throws ParseException, IOException {
-
 		Query query = _parser.parse(str);
 		LOGGER.info("Query:" + query.toString());
 		TopDocs docs = _index.search(query, 10);
@@ -89,8 +89,7 @@ public class SearcherNode extends Worker {
 		
 	}
 
-	@Override
-	public void run() {
+	public void start() throws IOException {
 		// TODO Auto-generated method stub
 		
 	}

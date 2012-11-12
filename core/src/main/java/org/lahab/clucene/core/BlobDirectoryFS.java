@@ -61,7 +61,7 @@ public class BlobDirectoryFS extends Directory {
 		client = storageAccount.createCloudBlobClient();
 		initCacheDirectory(cacheDirectory);
 	}
-	
+
 	public void clearCache() throws IOException {
 		for(String file : cacheDirectory.listAll()) {
 			cacheDirectory.deleteFile(file);
