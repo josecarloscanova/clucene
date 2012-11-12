@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.lahab.clucene.server.Worker;
 import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
@@ -63,13 +62,12 @@ public class IndexerNode extends Worker {
 	}
 	
 	public IndexerNode(CloudStorage storage, Configuration config) throws Exception {
-		_params = new Parametizer(DEFAULTS, config);
-		
-		_indexer = new Indexer(storage, config.get("indexer"));
-		DocumentIndexer.INDEX = _indexer;
-		
+		_params = new Parametizer(DEFAULTS, config);		
 		_pool = new PoolManager(config);
+		
 		_crawler = new BlobParser(storage, _pool, config.get("crawler"));
+		_indexer = new Indexer(storage, _pool, config.get("indexer"));
+		PoolJobs.INDEX = _indexer;
 		
 		Statable[] statables = {(Statable) _indexer, (Statable) _crawler, (Statable) _pool};
 		if (_params.getBoolean("stats")) {
@@ -88,23 +86,33 @@ public class IndexerNode extends Worker {
 		_indexer.download(_params.getString("downloadDir"));
 	}
 	
-	public void start() throws CorruptIndexException, IOException {
-		_indexer.open();
+	public void start() {
 		try {
-			if (_params.getBoolean("stats")) {
-				_stats.start();
+			_pool.open();
+			_indexer.open();		
+			try {
+				if (_params.getBoolean("stats")) {
+					_stats.start();
+				}
+			} catch (ParametizerException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (ParametizerException e) {
+			_crawler.start();
+		} catch (Exception e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
-		_crawler.start();
 	}
 	
-
 	public void stop() throws IOException {
 		_crawler.stop();
-		_pool.shutdown();
+		try {
+			_pool.shutdown();
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		_indexer.close();
 		try {
 			if (_params.getBoolean("stats")) {
@@ -114,9 +122,7 @@ public class IndexerNode extends Worker {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		LOGGER.info("Indexer node stoped");
+		LOGGER.info("Indexer node stopped");
 	}
-	
-	
 	
 }

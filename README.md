@@ -80,6 +80,7 @@ This is a list of things that can be improved:
 *		add much more unit tests
 *		justify the use of mutexes in DirectoryFS
 *		add compression on the nodes
+*		Improve the error handling (currently most of it is just dumping the stacktrace)
 ------------------------
 
 We use Travis for continuous integration! 

@@ -42,7 +42,9 @@ public class PoolManager implements Statable {
 	
 	protected ThreadPoolExecutor _poolCrawl;
 	protected ThreadPoolExecutor _poolIndex;
+	protected volatile Thread _commitThread = null;
 	protected StatRecorder _stats = null;
+	protected PoolJobs _jobFactory = new PoolJobs();
 	
 	public Parametizer _params;
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
@@ -55,6 +57,29 @@ public class PoolManager implements Statable {
 	
 	public PoolManager(Configuration conf) throws Exception {
 		_params = new Parametizer(DEFAULTS, conf);
+	}
+	
+	public void shutdown() throws InterruptedException {
+		if (_poolCrawl != null && _poolIndex != null) {
+			LOGGER.info("Shutting down crawler pool");
+			shutdownPool(_poolCrawl);
+			LOGGER.info("Shutting down indexer pool");
+			shutdownPool(_poolIndex);
+			LOGGER.info("Shutting down commit pool");
+			while(_commitThread.isAlive()) {
+				Thread.sleep(100);
+			}
+			LOGGER.info("Shutdown finished");
+			_poolCrawl = null;
+			_poolIndex = null;
+			return;
+		}
+	}
+	
+	public void open() throws Exception {
+		if (_poolCrawl != null || _poolIndex != null || _commitThread != null) {
+			throw new Exception("The pools should be terminated");
+		}
 		int nb = _params.getInt("crawler.nbThreads");
 		_poolCrawl = new ThreadPoolExecutor(nb, nb, 0, TimeUnit.SECONDS,
 				   new ArrayBlockingQueue<Runnable>(_params.getInt("crawler.queueSize"), false),
@@ -64,16 +89,7 @@ public class PoolManager implements Statable {
 		_poolIndex = new ThreadPoolExecutor(nb, nb, 0, TimeUnit.SECONDS,
 				   new ArrayBlockingQueue<Runnable>(_params.getInt("indexer.queueSize"), false),
 				   new ThreadPoolExecutor.CallerRunsPolicy());
-		
-		DocumentParser.POOL = this;
-	}
-
-	public void shutdown() {
-		LOGGER.info("Shutting down crawler pool");
-		shutdownPool(_poolCrawl);
-		LOGGER.info("Shutting down indexer pool");
-		shutdownPool(_poolIndex);
-		LOGGER.info("Shutdown finished");
+		_commitThread = null;
 	}
 	
 	protected void shutdownPool(ExecutorService pool) {
@@ -91,11 +107,23 @@ public class PoolManager implements Statable {
 	}
 	
 	public void addIndexJob(Document doc) {
-		_poolIndex.execute(new DocumentIndexer(doc));
+		LOGGER.fine("Add Indexing job");
+		_poolIndex.execute(_jobFactory.NEW_documentIndexer(doc));
 	}
 	
 	public void addCrawlJob(CloudBlob blobItem) {
-		_poolCrawl.execute(new DocumentParser(blobItem));
+		LOGGER.fine("Add Crawling job");
+		_poolCrawl.execute(_jobFactory.NEW_documentParser(blobItem));
+	}
+	
+	public void addCommitJob() {
+		if (_commitThread == null || !_commitThread.isAlive()) {
+			LOGGER.fine("Starting a new commit thread");
+			_commitThread = new Thread(_jobFactory.NEW_commitIndexer());
+			_commitThread.start();
+		} else {
+			LOGGER.fine("commit already happening ignoring");
+		}
 	}
 	
 	@Override
@@ -106,6 +134,10 @@ public class PoolManager implements Statable {
 
 	@Override
 	public String[] record() {
+		if (_poolCrawl == null || _poolIndex == null) {
+			String[] stats = {"", ""};
+			return stats;
+		}
 		String[] stats = {String.valueOf(_poolCrawl.getPoolSize()), String.valueOf(_poolIndex.getPoolSize())};
 		return stats;
 	}

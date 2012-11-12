@@ -59,6 +59,7 @@ public class Indexer implements Statable {
 	protected IndexWriter _index;
 	/** The directory that will write */
 	private Directory _directory;
+	protected PoolManager _pool;
 	/** How many documents have been added since the last commit */
 	protected volatile static int _nbAdded = 0;
 	protected volatile static int _nbCommited = 0;
@@ -66,6 +67,7 @@ public class Indexer implements Statable {
 	public Parametizer _params;
 
 	private CloudStorage _cloudStorage;
+
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
 	static {
 		DEFAULTS.put("commitFrequency", 10);
@@ -74,8 +76,9 @@ public class Indexer implements Statable {
 		DEFAULTS.put("folder", "indexCache");
 	}
 
-	public Indexer(CloudStorage storage, Configuration config) throws Exception {
+	public Indexer(CloudStorage storage, PoolManager pool, Configuration config) throws Exception {
 		_params = new Parametizer(DEFAULTS, config);
+		_pool = pool;
 		_cloudStorage = storage;
 		_cloudStorage.addContainer("directory", _params.getString("container"));
 		if (_params.getBoolean("regular")) {
@@ -120,33 +123,23 @@ public class Indexer implements Statable {
 
 	public void addDoc(Document _doc) throws CorruptIndexException, IOException, ParametizerException {
 		_index.addDocument(_doc);
-		commit();
+		checkCommit();
 	}
 	
-	protected synchronized void commit() throws CorruptIndexException, ParametizerException, IOException {
+	protected synchronized void checkCommit() throws ParametizerException {
 		_nbAdded++;
 		if (_nbAdded % 100 == 0) {
 	    	LOGGER.info(_nbAdded + " Document indexed");
 	    }
 	    if (_nbAdded % _params.getInt("commitFrequency") == 0) {
 	    	LOGGER.info("Commit start");
-	    	new Thread(new Runnable() {
-	    		public void run() {
-	    			try {
-						_index.commit();
-					} catch (CorruptIndexException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-	    			LOGGER.info("Commit finished");
-	    		}
-	    	}).run();
+	    	_pool.addCommitJob();
 	    	_nbCommited++;
-	    	LOGGER.info("Hoy");
 	    }			
+	}
+	
+	public void commit() throws CorruptIndexException, IOException {
+		_index.commit();
 	}
 
 	public void close() {
@@ -180,5 +173,9 @@ public class Indexer implements Statable {
 				_directory.clearLock("write.lock");
 			}
 		}
+	}
+
+	public void queueDoc(Document doc) {
+		_pool.addIndexJob(doc);
 	}
 }
