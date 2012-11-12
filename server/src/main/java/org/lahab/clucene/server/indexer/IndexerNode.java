@@ -21,22 +21,16 @@ package org.lahab.clucene.server.indexer;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import org.lahab.clucene.server.Worker;
 import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
-import org.lahab.clucene.server.utils.Parametizer;
 import org.lahab.clucene.server.utils.ParametizerException;
-import org.lahab.clucene.server.utils.StatRecorder;
 import org.lahab.clucene.server.utils.Statable;
 
-
-
 /**
- * A thread that will start crawling and indexing documents
+ * A worker that is in charge of the crawling and indexing of documents.
  * @author charlymolter
  *
  */
@@ -45,35 +39,33 @@ public class IndexerNode extends Worker {
 
 	/** The crawler thread */
 	protected BlobParser _crawler;
-	
+	/** The thread pools */
 	protected PoolManager _pool;
-	
+	/** The indexer that encapsulates communication with the lucene index*/
 	protected Indexer _indexer;
-	
-	protected StatRecorder _stats = null;
-	
-	public Parametizer _params;
-	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+
 	static {
 		DEFAULTS.put("downloadDir", "download");
-		DEFAULTS.put("stats.file", "statsIndexerNode.csv");
-		DEFAULTS.put("stats.frequency", 1000);
-		DEFAULTS.put("stats", true);
+		DEFAULTS.put("indexer", null);
+		DEFAULTS.put("crawler", null);
 	}
 	
+	/**
+	 * Creates a new IndexerNode
+	 * @param storage
+	 * @param config
+	 * @throws Exception
+	 */
 	public IndexerNode(CloudStorage storage, Configuration config) throws Exception {
-		_params = new Parametizer(DEFAULTS, config);		
+		super(storage, config);	
 		_pool = new PoolManager(config);
-		
 		_crawler = new BlobParser(storage, _pool, config.get("crawler"));
 		_indexer = new Indexer(storage, _pool, config.get("indexer"));
+		
 		PoolJobs.INDEX = _indexer;
 		
-		Statable[] statables = {(Statable) _indexer, (Statable) _crawler, (Statable) _pool};
-		if (_params.getBoolean("stats")) {
-			_stats = new StatRecorder(_params.getString("stats.file"), 
-									  _params.getInt("stats.frequency"), statables);
-		}
+		Statable[] statables = {_indexer, _pool};
+		initStats(config.get("stats"), statables);
 	}
 
 	/**
@@ -86,6 +78,7 @@ public class IndexerNode extends Worker {
 		_indexer.download(_params.getString("downloadDir"));
 	}
 	
+	@Override
 	public void start() {
 		try {
 			_pool.open();
@@ -95,8 +88,7 @@ public class IndexerNode extends Worker {
 					_stats.start();
 				}
 			} catch (ParametizerException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.err.println("Param stats don't exist");
 			}
 			_crawler.start();
 		} catch (Exception e1) {
@@ -105,6 +97,7 @@ public class IndexerNode extends Worker {
 		}
 	}
 	
+	@Override
 	public void stop() throws IOException {
 		_crawler.stop();
 		try {
@@ -119,8 +112,7 @@ public class IndexerNode extends Worker {
 				_stats.stop();
 			}
 		} catch (ParametizerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("Param stats don't exist");
 		}
 		LOGGER.info("Indexer node stopped");
 	}

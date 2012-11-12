@@ -45,7 +45,7 @@ public class ParametizerTest {
 	@Test
 	public void testDefaultParametizer() throws Exception {
 		JSONObject json = (JSONObject) JSONSerializer.toJSON("{}");
-		Configuration config = new Configuration(json);
+		Configuration config = new JSONConfiguration(json);
 		Parametizer p = new Parametizer(def, config);
 		assertTrue((Boolean) p._parameters.get("bool"));
 		assertTrue((Boolean) p._parameters.get("bool.true"));
@@ -54,7 +54,7 @@ public class ParametizerTest {
 		assertEquals((Double) p._parameters.get("double"), Double.valueOf(3.1));
 		assertEquals((String) p._parameters.get("string"), String.valueOf("hello"));
 		
-		p = new Parametizer(def, null);
+		p = new Parametizer(def);
 		assertTrue((Boolean) p._parameters.get("bool"));
 		assertTrue((Boolean) p._parameters.get("bool.true"));
 		assertFalse((Boolean) p._parameters.get("bool.false"));
@@ -66,7 +66,7 @@ public class ParametizerTest {
 	@Test
 	public void testRedefine() throws Exception {
 		JSONObject json = (JSONObject) JSONSerializer.toJSON("{\"bool\": {\"true\": false, \"false\": true}, \"int\":2, \"double\": 2.1, \"string\": \"bye\"}");
-		Configuration config = new Configuration(json);
+		Configuration config = new JSONConfiguration(json);
 		Parametizer p = new Parametizer(def, config);
 		assertTrue((Boolean) p._parameters.get("bool"));
 		assertFalse((Boolean) p._parameters.get("bool.true"));
@@ -76,7 +76,7 @@ public class ParametizerTest {
 		assertEquals((String) p._parameters.get("string"), String.valueOf("bye"));
 		
 		json = (JSONObject) JSONSerializer.toJSON("{\"int\":2}");
-		config = new Configuration(json);
+		config = new JSONConfiguration(json);
 		p = new Parametizer(def, config);
 		
 		assertTrue((Boolean) p._parameters.get("bool"));
@@ -91,7 +91,7 @@ public class ParametizerTest {
 	@Test
 	public void testGet() throws Exception {
 		JSONObject json = (JSONObject) JSONSerializer.toJSON("{\"int\":2, \"double\": 2.1, \"string\": \"bye\"}");
-		Configuration config = new Configuration(json);
+		Configuration config = new JSONConfiguration(json);
 		Parametizer p = new Parametizer(def, config);
 		
 		assertTrue(p.getBoolean("bool.true"));
@@ -101,4 +101,23 @@ public class ParametizerTest {
 		assertEquals(p.getString("string"), "bye");
 	}
 
+	@Test(expected=ParametizerException.class)
+	public void testCompulsory() throws Exception {
+		String key = "compulsory";
+		def.put(key, null);
+		@SuppressWarnings("unused")
+		Parametizer p = new Parametizer(def);
+		def.remove(key);
+	}
+	
+	public void testCompulsory2() throws Exception {
+		String key = "compulsory";
+		def.put(key, null);
+		JSONObject json = (JSONObject) JSONSerializer.toJSON("{\"compulsory\":2}");
+		Configuration config = new JSONConfiguration(json);
+		Parametizer p = new Parametizer(def, config);
+		assertTrue(p.getInt("compulsory") == 2);
+		def.remove(key);
+	}	
+	
 }

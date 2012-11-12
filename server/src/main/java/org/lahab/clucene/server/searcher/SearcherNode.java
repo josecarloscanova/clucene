@@ -1,8 +1,6 @@
 package org.lahab.clucene.server.searcher;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -20,7 +18,6 @@ import org.lahab.clucene.core.BlobDirectoryFS;
 import org.lahab.clucene.server.Worker;
 import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
-import org.lahab.clucene.server.utils.Parametizer;
 /*
  * #%L
  * client
@@ -52,16 +49,15 @@ public class SearcherNode extends Worker {
 	/** The directory that will write */
 	private Directory _directory;
 	private QueryParser _parser;
-	
-	public Parametizer _params;
-	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+
+	private CloudStorage _cloudStorage;
 	static {
 		DEFAULTS.put("container", "clucene");
 		DEFAULTS.put("stats", false);
 	}
 	
-	public SearcherNode(CloudStorage _cloudStorage, Configuration configuration) throws Exception {
-		_params = new Parametizer(DEFAULTS, configuration);
+	public SearcherNode(CloudStorage storage, Configuration config) throws Exception {
+		super(storage, config);
 		String containerName = _params.getString("container");
 		_cloudStorage.addContainer("directory", containerName);
 	    _directory = new BlobDirectoryFS(_cloudStorage.getAccount(), containerName, new RAMDirectory());

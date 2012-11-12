@@ -25,6 +25,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This creates a new thread that will sleep for _frequency milliseconds and wake 
@@ -33,19 +35,23 @@ import java.io.Writer;
  *
  */
 public class StatRecorder implements Runnable {
-	public int _frequency;
 	protected Thread _thread;
 	protected Statable[] _statable;
 	protected Writer _out;
-	protected String _fileName;
+	public Parametizer _params;
+	protected static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+	static {
+		DEFAULTS.put("file", "stats.csv");
+		DEFAULTS.put("frequency", 1000);
+	}
 	
-	public StatRecorder(String path, int freq, Statable[] statable) {
-		_frequency = freq;
+	
+	public StatRecorder(Configuration config, Statable[] statable) throws Exception {
+		_params = new Parametizer(DEFAULTS, config);
 		_statable = statable;
-		_fileName = path;
 		File f = null;
 	    try {
-	      f = new File(_fileName);
+	      f = new File(_params.getString("file"));
 	      if (f.exists()) {
 	    	  f.delete();
 	      } 
@@ -72,8 +78,11 @@ public class StatRecorder implements Runnable {
 					write(stat.record());
 				}
 				endRecord();
-				Thread.sleep(_frequency);
+				Thread.sleep(_params.getInt("frequency"));
 			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ParametizerException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

@@ -15,6 +15,7 @@ import org.lahab.clucene.server.indexer.IndexerNode;
 import org.lahab.clucene.server.searcher.SearcherNode;
 import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
+import org.lahab.clucene.server.utils.JSONConfiguration;
 import org.lahab.clucene.server.utils.Parametizer;
 
 
@@ -60,7 +61,7 @@ public class NodeMain {
 			if (args.length != 0 ) {
 				CONFIG_FILE = args[0];
 			}
-			_config = new Configuration(CONFIG_FILE);
+			_config = new JSONConfiguration(CONFIG_FILE);
 		}
 
 		HttpServlet servlet = null;

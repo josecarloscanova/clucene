@@ -48,7 +48,8 @@ import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
 import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
 
 /**
- * A thread that will index the documents given in the queue to a AzureBlobStorage
+ * A wrapper to encapsulate all communication with the index writer
+ * It also keeps some stats and schedule jobs to the pool manager
  * @author charlymolter
  *
  */
@@ -57,11 +58,12 @@ public class Indexer implements Statable {
 	
 	/** The index writer */
 	protected IndexWriter _index;
-	/** The directory that will write */
+	/** The directory that will write to */
 	private Directory _directory;
 	protected PoolManager _pool;
-	/** How many documents have been added since the last commit */
+	/** How many documents have been added since the indexer is opened */
 	protected volatile static int _nbAdded = 0;
+	/** Number of commits since the indexer is opened */
 	protected volatile static int _nbCommited = 0;
 
 	public Parametizer _params;
@@ -70,12 +72,20 @@ public class Indexer implements Statable {
 
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
 	static {
+		// Default parameters
 		DEFAULTS.put("commitFrequency", 10);
 		DEFAULTS.put("regular", false);
 		DEFAULTS.put("container", "clucene");
 		DEFAULTS.put("folder", "indexCache");
 	}
 
+	/**
+	 * Creates an new indexer
+	 * @param storage
+	 * @param pool
+	 * @param config
+	 * @throws Exception
+	 */
 	public Indexer(CloudStorage storage, PoolManager pool, Configuration config) throws Exception {
 		_params = new Parametizer(DEFAULTS, config);
 		_pool = pool;
@@ -109,23 +119,22 @@ public class Indexer implements Statable {
 		}
 	}
 
-	@Override
-	public String[] record() {
-		String[] stats = {String.valueOf(_nbAdded), String.valueOf(_nbCommited)};
-		return stats;
-	}
-
-	@Override
-	public String[] header() {
-		String[] stats = {"nbIndex", "nbCommits"};
-		return stats;
-	}
-
+	/**
+	 * Adds the document to the index and commits if necessary
+	 * @param _doc
+	 * @throws CorruptIndexException
+	 * @throws IOException
+	 * @throws ParametizerException
+	 */
 	public void addDoc(Document _doc) throws CorruptIndexException, IOException, ParametizerException {
 		_index.addDocument(_doc);
 		checkCommit();
 	}
 	
+	/**
+	 * Updates the stats variable and ask for a commit job if necessary
+	 * @throws ParametizerException
+	 */
 	protected synchronized void checkCommit() throws ParametizerException {
 		_nbAdded++;
 		if (_nbAdded % 100 == 0) {
@@ -141,24 +150,12 @@ public class Indexer implements Statable {
 	public void commit() throws CorruptIndexException, IOException {
 		_index.commit();
 	}
-
-	public void close() {
-		if (_index != null) {
-			try {
-				_index.close();
-			} catch (CorruptIndexException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			_nbCommited = 0;
-			_nbAdded = 0;
-			_index = null;
-		}
-	}
 	
+	/**
+	 * Opens an index writer on the current directory
+	 * @throws CorruptIndexException
+	 * @throws IOException
+	 */
 	public void open() throws CorruptIndexException, IOException {
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 	    IndexWriterConfig configWriter = new IndexWriterConfig(Version.LUCENE_36, analyzer);
@@ -175,7 +172,44 @@ public class Indexer implements Statable {
 		}
 	}
 
+	/**
+	 * Closes the current index writer
+	 */
+	public void close() {
+		if (_index != null) {
+			try {
+				_index.close();
+				_directory.close();
+			} catch (CorruptIndexException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			_nbCommited = 0;
+			_nbAdded = 0;
+			_index = null;
+		}
+	}
+	
+	/**
+	 * Tells the pool to add a job to index this document
+	 * @param doc Document to be indexed
+	 */
 	public void queueDoc(Document doc) {
 		_pool.addIndexJob(doc);
+	}
+
+	@Override
+	public String[] record() {
+		String[] stats = {String.valueOf(_nbAdded), String.valueOf(_nbCommited)};
+		return stats;
+	}
+
+	@Override
+	public String[] header() {
+		String[] stats = {"nbIndex", "nbCommits"};
+		return stats;
 	}
 }

@@ -45,7 +45,8 @@ public class ConfigurationTest {
 		String json = "{\"key1\": 1, \"key2\": 2}";
 		FileUtils.writeStringToFile(file, json);
 		JSONObject obj = (JSONObject) JSONSerializer.toJSON(json);
-		Configuration conf = new Configuration("foo.json");
+		JSONConfiguration conf = new JSONConfiguration("foo.json");
+		System.out.println(conf._config);
         assertNotNull(conf._config);
         assertEquals(obj.get("key1"), conf._config.get("key1"));
         assertEquals(obj.get("key2"), conf._config.get("key2"));
@@ -56,7 +57,7 @@ public class ConfigurationTest {
 	@Test
 	public void testConfigurationJSONObject() {
 		JSONObject obj = (JSONObject) JSONSerializer.toJSON("{\"key1\": 1, \"key2\": 2}");
-        Configuration conf = new Configuration(obj);
+        JSONConfiguration conf = new JSONConfiguration(obj);
         assertNotNull(conf._config);
         assertEquals(obj.get("key1"), conf._config.get("key1"));
         assertEquals(obj.get("key2"), conf._config.get("key2"));
@@ -66,7 +67,7 @@ public class ConfigurationTest {
 	@Test
 	public void testContainsKey() {
 		JSONObject obj = (JSONObject) JSONSerializer.toJSON("{\"key1\": 1, \"key2\": 2, \"compound\": {\"x\": \"hoy\"}}");
-        Configuration conf = new Configuration(obj);
+        Configuration conf = new JSONConfiguration(obj);
         assertTrue(conf.containsKey("key1"));
         assertTrue(conf.containsKey("key2"));
         assertFalse(conf.containsKey("key3"));
@@ -78,11 +79,11 @@ public class ConfigurationTest {
 	@Test(expected=Exception.class)
 	public void testGet() throws Exception {
 		JSONObject obj = (JSONObject) JSONSerializer.toJSON("{\"key1\": 1, \"key2\": 2, \"compound\": {\"x\": \"hoy\"}}");
-        Configuration conf = new Configuration(obj);
+        Configuration conf = new JSONConfiguration(obj);
         assertTrue(conf.get("compound") instanceof Configuration);
         assertTrue(conf.containsKey("compound.x"));
         assertFalse(conf.containsKey("compound.y"));
-        Configuration down = conf.get("compound");
+        JSONConfiguration down = (JSONConfiguration) conf.get("compound");
         assertTrue(down._config.containsKey("x"));
         assertFalse(down._config.containsKey("y"));
         
@@ -93,7 +94,7 @@ public class ConfigurationTest {
 	@Test(expected=Exception.class)
 	public void testGetObj() throws Exception {
 		JSONObject obj = (JSONObject) JSONSerializer.toJSON("{\"key1\": 1, \"key2\": true, \"compound\": {\"x\": \"hoy\"}}");
-        Configuration conf = new Configuration(obj);
+        Configuration conf = new JSONConfiguration(obj);
         assertTrue(conf.get("compound") instanceof Configuration);
         assertTrue((Boolean)conf.getObj("key2"));
         assertTrue("hoy".equals((String)conf.getObj("compound.x")));
@@ -104,7 +105,7 @@ public class ConfigurationTest {
 	@Test
 	public void testIsCompound() throws Exception {
 		JSONObject obj = (JSONObject) JSONSerializer.toJSON("{\"key1\": 1, \"key2\": true, \"compound\": {\"x\": \"hoy\", \"more\":{}}, \"key3\": {}}");
-		Configuration conf = new Configuration(obj);
+		Configuration conf = new JSONConfiguration(obj);
 		assertTrue(conf.isCompound("compound"));
 		assertTrue(conf.isCompound("key3"));
 		assertTrue(conf.isCompound("compound.more"));

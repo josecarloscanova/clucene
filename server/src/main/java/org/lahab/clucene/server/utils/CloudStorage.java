@@ -29,6 +29,12 @@ import com.microsoft.windowsazure.services.blob.client.CloudBlobContainer;
 import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
 import com.microsoft.windowsazure.services.core.storage.StorageException;
 
+/**
+ * Encapsulates the credentials and connection creation
+ * It contains a map of every accessible container
+ * @author charlymolter
+ *
+ */
 public class CloudStorage {
 	public Parametizer _params;
 	protected CloudStorageAccount _account = null;
@@ -41,14 +47,23 @@ public class CloudStorage {
 		DEFAULTS.put("accountKey", null);
 	}
 	
-
-	
-	
+	/**
+	 * Opens a connection to the cloudStorage service
+	 * @param configuration
+	 * @throws Exception
+	 */
 	public CloudStorage(Configuration configuration) throws Exception {
 		_params = new Parametizer(DEFAULTS, configuration);
 		initAccount();
 	}
 
+	/**
+	 * Open and add a container to the list of current containers
+	 * @param key
+	 * @param container
+	 * @throws URISyntaxException
+	 * @throws StorageException
+	 */
 	public void addContainer(String key, String container) throws URISyntaxException, StorageException {
 		CloudBlobContainer cont = _account.createCloudBlobClient().getContainerReference(container);
 		_containers.put(key, cont);
@@ -58,6 +73,11 @@ public class CloudStorage {
 		return _account;
 	}
 
+	/**
+	 * Returns the container identified by key
+	 * @param key
+	 * @return
+	 */
 	public CloudBlobContainer getContainer(String key) {
 		return _containers.get(key);
 	}

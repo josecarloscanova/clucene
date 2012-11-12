@@ -21,15 +21,44 @@ package org.lahab.clucene.server;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.lahab.clucene.server.utils.CloudStorage;
+import org.lahab.clucene.server.utils.Configuration;
+import org.lahab.clucene.server.utils.Parametizer;
+import org.lahab.clucene.server.utils.StatRecorder;
+import org.lahab.clucene.server.utils.Statable;
 
 public abstract class Worker {
 
+	public Parametizer _params;
+	protected static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+	protected StatRecorder _stats = null;
+	static {
+		DEFAULTS.put("stats", false);
+	}
+	
+	public Worker(CloudStorage storage, Configuration config) throws Exception {
+		_params = new Parametizer(DEFAULTS, config);
+	}
+	
 	/** 
-	 * Gracefully stops the indexing
+	 * Gracefully stops whatever our worker is doing
 	 * @throws IOException 
 	 */
 	abstract public void stop() throws IOException;
 
+	/**
+	 * Starts the workers' work
+	 * @throws IOException
+	 */
 	abstract public void start() throws IOException;
+	
+	protected void initStats(Configuration config, Statable[] statables) throws Exception {
+		if (_params.getBoolean("stats")) {
+			_stats = new StatRecorder(config, statables);
+		}
+	}
 
 }

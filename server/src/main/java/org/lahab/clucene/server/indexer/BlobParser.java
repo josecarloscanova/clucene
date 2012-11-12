@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 import org.lahab.clucene.server.utils.CloudStorage;
 import org.lahab.clucene.server.utils.Configuration;
 import org.lahab.clucene.server.utils.Parametizer;
-import org.lahab.clucene.server.utils.Statable;
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlob;
 import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
@@ -37,25 +36,19 @@ import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
  * @author charlymolter
  *
  */
-public class BlobParser implements Runnable, Statable {
+public class BlobParser implements Runnable {
 	public final static Logger LOGGER = Logger.getLogger(BlobParser.class.getName());
-	
-	protected int numberAdded = 0;
-	
 	protected PoolManager _pool;
-
 	private Thread _thread;
-
 	public Parametizer _params;
-
 	private CloudStorage _cloudStorage;
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
 	static {
+		// Default parameters
 		DEFAULTS.put("container", "pages");
 	}
 
-	public BlobParser(CloudStorage storage,
-			PoolManager pool, Configuration config) throws Exception {
+	public BlobParser(CloudStorage storage, PoolManager pool, Configuration config) throws Exception {
 		_params = new Parametizer(DEFAULTS, config);
 		_pool = pool;
 		_cloudStorage = storage;
@@ -73,7 +66,6 @@ public class BlobParser implements Runnable, Statable {
 			}
 			if (blobItem instanceof CloudBlob) {
 				_pool.addCrawlJob((CloudBlob)blobItem);
-				numberAdded++;
 			}
 		}
 		LOGGER.info("finished indexing all documents");
@@ -86,17 +78,5 @@ public class BlobParser implements Runnable, Statable {
 	public void stop() throws IOException {
 		LOGGER.info("Closing the crawling thread");
 		_thread = null;
-	}
-
-	@Override
-	public String[] header() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String[] record() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 }

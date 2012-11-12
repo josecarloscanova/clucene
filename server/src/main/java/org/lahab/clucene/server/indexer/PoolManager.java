@@ -36,12 +36,20 @@ import org.lahab.clucene.server.utils.Statable;
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlob;
 
-
+/**
+ * Handles each Thread pool 
+ * This is where most of the indexing concurrency is encapsulated
+ * @author charlymolter
+ *
+ */
 public class PoolManager implements Statable {
 	public final static Logger LOGGER = Logger.getLogger(PoolManager.class.getName());
 	
+	/** The pool of crawling jobs */
 	protected ThreadPoolExecutor _poolCrawl;
+	/** The pool of Indexing jobs */
 	protected ThreadPoolExecutor _poolIndex;
+	/** The commit thread if it exists */
 	protected volatile Thread _commitThread = null;
 	protected StatRecorder _stats = null;
 	protected PoolJobs _jobFactory = new PoolJobs();
@@ -59,6 +67,11 @@ public class PoolManager implements Statable {
 		_params = new Parametizer(DEFAULTS, conf);
 	}
 	
+	/**
+	 * Stops accepting new jobs and finishes the alreadys started ones
+	 * Also waits for the end of a commit if one is started
+	 * @throws InterruptedException
+	 */
 	public void shutdown() throws InterruptedException {
 		if (_poolCrawl != null && _poolIndex != null) {
 			LOGGER.info("Shutting down crawler pool");
@@ -76,6 +89,10 @@ public class PoolManager implements Statable {
 		}
 	}
 	
+	/**
+	 * Creates all necessary pools
+	 * @throws Exception
+	 */
 	public void open() throws Exception {
 		if (_poolCrawl != null || _poolIndex != null || _commitThread != null) {
 			throw new Exception("The pools should be terminated");
@@ -92,6 +109,10 @@ public class PoolManager implements Statable {
 		_commitThread = null;
 	}
 	
+	/**
+	 * shutdown gracefully one pool
+	 * @param pool
+	 */
 	protected void shutdownPool(ExecutorService pool) {
 		pool.shutdown();
 		while (true) {
@@ -106,16 +127,27 @@ public class PoolManager implements Statable {
 		}		
 	}
 	
+	/**
+	 * Adds an indexing job
+	 * @param doc
+	 */
 	public void addIndexJob(Document doc) {
 		LOGGER.fine("Add Indexing job");
 		_poolIndex.execute(_jobFactory.NEW_documentIndexer(doc));
 	}
 	
+	/**
+	 * Adds a crawling job
+	 * @param blobItem
+	 */
 	public void addCrawlJob(CloudBlob blobItem) {
 		LOGGER.fine("Add Crawling job");
 		_poolCrawl.execute(_jobFactory.NEW_documentParser(blobItem));
 	}
 	
+	/**
+	 * Adds a commit job if no commit is already happening
+	 */
 	public void addCommitJob() {
 		if (_commitThread == null || !_commitThread.isAlive()) {
 			LOGGER.fine("Starting a new commit thread");
@@ -128,17 +160,19 @@ public class PoolManager implements Statable {
 	
 	@Override
 	public String[] header() {
-		String[] stats = {"Size crawler Queue", "Size indexer Queue"};
+		String[] stats = {"Size crawler Queue", "Size indexer Queue", "Commiting"};
 		return stats;
 	}
 
 	@Override
 	public String[] record() {
 		if (_poolCrawl == null || _poolIndex == null) {
-			String[] stats = {"", ""};
+			String[] stats = {"", "", "0"};
 			return stats;
 		}
-		String[] stats = {String.valueOf(_poolCrawl.getPoolSize()), String.valueOf(_poolIndex.getPoolSize())};
+		String[] stats = {String.valueOf(_poolCrawl.getQueue().size()), 
+						  String.valueOf(_poolIndex.getQueue().size()),
+						  (_commitThread != null && _commitThread.isAlive()) ? "1" : "0"};
 		return stats;
 	}
 }

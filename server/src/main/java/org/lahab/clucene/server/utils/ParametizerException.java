@@ -22,6 +22,10 @@ package org.lahab.clucene.server.utils;
 
 public class ParametizerException extends Exception {
 
+	public ParametizerException(String string) {
+		super(string);
+	}
+
 	/**
 	 * 
 	 */
