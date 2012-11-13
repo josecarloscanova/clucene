@@ -13,10 +13,10 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.lahab.clucene.server.indexer.IndexerNode;
 import org.lahab.clucene.server.searcher.SearcherNode;
-import org.lahab.clucene.server.utils.CloudStorage;
-import org.lahab.clucene.server.utils.Configuration;
-import org.lahab.clucene.server.utils.JSONConfiguration;
-import org.lahab.clucene.server.utils.Parametizer;
+import org.lahab.clucene.utils.CloudStorage;
+import org.lahab.clucene.utils.Configuration;
+import org.lahab.clucene.utils.JSONConfiguration;
+import org.lahab.clucene.utils.Parametizer;
 
 
 /*

@@ -24,10 +24,10 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.lahab.clucene.server.Worker;
-import org.lahab.clucene.server.utils.CloudStorage;
-import org.lahab.clucene.server.utils.Configuration;
-import org.lahab.clucene.server.utils.ParametizerException;
-import org.lahab.clucene.server.utils.Statable;
+import org.lahab.clucene.utils.CloudStorage;
+import org.lahab.clucene.utils.Configuration;
+import org.lahab.clucene.utils.ParametizerException;
+import org.lahab.clucene.utils.Statable;
 
 /**
  * A worker that is in charge of the crawling and indexing of documents.

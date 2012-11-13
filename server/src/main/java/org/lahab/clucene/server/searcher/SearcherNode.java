@@ -16,8 +16,8 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.lahab.clucene.core.BlobDirectoryFS;
 import org.lahab.clucene.server.Worker;
-import org.lahab.clucene.server.utils.CloudStorage;
-import org.lahab.clucene.server.utils.Configuration;
+import org.lahab.clucene.utils.CloudStorage;
+import org.lahab.clucene.utils.Configuration;
 /*
  * #%L
  * client

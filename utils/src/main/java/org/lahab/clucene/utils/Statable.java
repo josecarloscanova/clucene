@@ -1,4 +1,4 @@
-package org.lahab.clucene.server.utils;
+package org.lahab.clucene.utils;
 
 /*
  * #%L

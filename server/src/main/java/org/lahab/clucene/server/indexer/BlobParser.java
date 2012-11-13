@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.lahab.clucene.server.utils.CloudStorage;
-import org.lahab.clucene.server.utils.Configuration;
-import org.lahab.clucene.server.utils.Parametizer;
+import org.lahab.clucene.utils.CloudStorage;
+import org.lahab.clucene.utils.Configuration;
+import org.lahab.clucene.utils.Parametizer;
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlob;
 import com.microsoft.windowsazure.services.blob.client.ListBlobItem;

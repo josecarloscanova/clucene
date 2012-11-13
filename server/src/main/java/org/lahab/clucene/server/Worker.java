@@ -24,11 +24,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.lahab.clucene.server.utils.CloudStorage;
-import org.lahab.clucene.server.utils.Configuration;
-import org.lahab.clucene.server.utils.Parametizer;
-import org.lahab.clucene.server.utils.StatRecorder;
-import org.lahab.clucene.server.utils.Statable;
+import org.lahab.clucene.utils.CloudStorage;
+import org.lahab.clucene.utils.Configuration;
+import org.lahab.clucene.utils.Parametizer;
+import org.lahab.clucene.utils.StatRecorder;
+import org.lahab.clucene.utils.Statable;
 
 public abstract class Worker {
 

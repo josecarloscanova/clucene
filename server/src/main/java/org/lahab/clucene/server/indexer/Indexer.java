@@ -38,11 +38,11 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
 import org.lahab.clucene.core.BlobDirectoryFS;
-import org.lahab.clucene.server.utils.CloudStorage;
-import org.lahab.clucene.server.utils.Configuration;
-import org.lahab.clucene.server.utils.Parametizer;
-import org.lahab.clucene.server.utils.ParametizerException;
-import org.lahab.clucene.server.utils.Statable;
+import org.lahab.clucene.utils.CloudStorage;
+import org.lahab.clucene.utils.Configuration;
+import org.lahab.clucene.utils.Parametizer;
+import org.lahab.clucene.utils.ParametizerException;
+import org.lahab.clucene.utils.Statable;
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
 import com.microsoft.windowsazure.services.blob.client.ListBlobItem;

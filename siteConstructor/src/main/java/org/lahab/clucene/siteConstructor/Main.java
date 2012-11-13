@@ -21,19 +21,16 @@ package org.lahab.clucene.siteConstructor;
  */
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
-import net.sf.json.JSONObject;
-import net.sf.json.JSONSerializer;
+import org.lahab.clucene.utils.CloudStorage;
+import org.lahab.clucene.utils.Configuration;
+import org.lahab.clucene.utils.JSONConfiguration;
+import org.lahab.clucene.utils.Parametizer;
 
-import org.apache.commons.io.IOUtils;
-
-import com.microsoft.windowsazure.services.blob.client.CloudBlobClient;
-import com.microsoft.windowsazure.services.blob.client.CloudBlobContainer;
 import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
-import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
 
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.crawler.CrawlController;
@@ -44,56 +41,50 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 public class Main {
 	public static String CONFIG_FILE = "config.json";
-	public static JSONObject _config;
-	public static CloudStorageAccount _storageAccount = null;
-	public static CloudBlobContainer _container;
+	
+	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
+	static {
+		DEFAULTS.put("container", "pages");
+		DEFAULTS.put("storageFolder", "crawl");
+		DEFAULTS.put("maxPagesToFetch", "-1");
+		DEFAULTS.put("nbCrawlers", 3);
+		DEFAULTS.put("seed", null);
+		DEFAULTS.put("azure", null);
+	}
+	
+	public static Parametizer _params;
+	public static CloudStorage _cloudStorage;
 	public static volatile long size = 0;
 	/**
 	 * @param args
 	 * @throws Exception 
 	 */
-	public static void main(String[] args) throws Exception {
-		if (_config == null) {
-			if (args.length != 0 ) {
-				CONFIG_FILE = args[0];
-			}
-			parseConfig(CONFIG_FILE);
+	public static void main(String[] args) throws Exception {		
+		if (args.length != 0 ) {
+			CONFIG_FILE = args[0];
 		}
+		Configuration config = new JSONConfiguration(CONFIG_FILE);
+		_params = new Parametizer(DEFAULTS, config);
+		_cloudStorage = new CloudStorage(config.get("azure"));
+		_cloudStorage.addContainer("crawler", _params.getString("container"));
+		_cloudStorage.getContainer("crawler").createIfNotExist();
 		
-		CrawlConfig config = new CrawlConfig();
-		config.setPolitenessDelay(100);
-        config.setCrawlStorageFolder(_config.getString("storageFolder"));
-        config.setMaxPagesToFetch(_config.getInt("maxPagesToFetch"));
+		CrawlConfig crawlConfig = new CrawlConfig();
+		crawlConfig.setPolitenessDelay(100);
+		crawlConfig.setCrawlStorageFolder(_params.getString("storageFolder"));
+		crawlConfig.setMaxPagesToFetch(_params.getInt("maxPagesToFetch"));
         
-        PageFetcher pageFetcher = new PageFetcher(config);
+        PageFetcher pageFetcher = new PageFetcher(crawlConfig);
 		RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
         RobotstxtServer robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher);
 		
-		CrawlController crawl = new CrawlController(config, pageFetcher, robotstxtServer);
-		crawl.addSeed(_config.getString("seed"));
-		crawl.start(SiteCrawler.class, _config.getInt("nbCrawlers"));
-	}
-
-	public static void parseConfig(String confFile) throws Exception {
-        InputStream is = new FileInputStream(new File(confFile));
-        String jsonTxt = IOUtils.toString(is);
-        _config = (JSONObject) JSONSerializer.toJSON(jsonTxt);
-        JSONObject azureConf = _config.getJSONObject("azure");
-        _storageAccount = CloudStorageAccount.parse("DefaultEndpointsProtocol="+ 
-					 azureConf.getString("defaultEndpointsProtocol") +
-					 ";AccountName=" +
-					 azureConf.getString("accountName") +
-					 ";AccountKey=" +
-					 azureConf.getString("accountKey") + ";");
-        
-        CloudBlobClient blobClient = _storageAccount.createCloudBlobClient();
-
-        _container = blobClient.getContainerReference(azureConf.getString("container"));
-        _container.createIfNotExist();
+		CrawlController crawl = new CrawlController(crawlConfig, pageFetcher, robotstxtServer);
+		crawl.addSeed(_params.getString("seed"));
+		crawl.start(SiteCrawler.class, _params.getInt("nbCrawlers"));
 	}
 
 	public static void addData(String name, byte[] html) throws Exception {
-		CloudBlockBlob blob = _container.getBlockBlobReference(name);
+		CloudBlockBlob blob = _cloudStorage.getContainer("crawler").getBlockBlobReference(name);
 		
 		size += 1;
 		InputStream source = new ByteArrayInputStream(html);
