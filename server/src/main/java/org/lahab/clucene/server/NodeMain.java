@@ -43,7 +43,6 @@ public class NodeMain {
 	private static final Logger LOGGER = Logger.getLogger(NodeMain.class.getName());
 	
 	public static String CONFIG_FILE = "config.json";
-	public static Configuration _config;
 	public static Worker _worker;
 	public static Server _server;
 	public static CloudStorage _cloudStorage;
@@ -53,40 +52,38 @@ public class NodeMain {
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
 	static {
 		DEFAULTS.put("port", 7050);
+		DEFAULTS.put("azure", null);
+		
 	}
 	
 	public static void main(String[] args) throws Exception {
-		// Retrieve storage account from connection-string
-		if (_config == null) {
-			if (args.length != 0 ) {
-				CONFIG_FILE = args[0];
-			}
-			_config = new JSONConfiguration(CONFIG_FILE);
+		if (args.length != 0) {
+			CONFIG_FILE = args[0];
 		}
+		Configuration config = new JSONConfiguration(CONFIG_FILE);
 
 		HttpServlet servlet = null;
 		String path = null;
 
-		_params = new Parametizer(DEFAULTS, _config);		
-		_cloudStorage = new CloudStorage(_config.get("azure"));
+		_params = new Parametizer(DEFAULTS, config);		
+		_cloudStorage = new CloudStorage(config.get("azure"));
 		// Creates an indexer or a searcher depending on the configuration
 		boolean isIndexer = false;
-		if (_config.containsKey("indexer") ^ _config.containsKey("searcher")) {
-			isIndexer = _config.containsKey("indexer");
+		if (config.containsKey("indexer") ^ config.containsKey("searcher")) {
+			isIndexer = config.containsKey("indexer");
 		} else {
 			throw new Exception("Your configuration file must contain either the configuration " +
-								"for an indexer or for a searcher " +
-								"it can't contain both");
+								"for an indexer or for a searcher it can't contain both");
 		}
 		if (isIndexer) {
 			LOGGER.info("starting indexer node");
-			IndexerNode indexer = new IndexerNode(_cloudStorage, _config.get("indexer"));
+			IndexerNode indexer = new IndexerNode(_cloudStorage, config.get("indexer"));
 			servlet = new IndexServlet(indexer);
 			path = IndexServlet.PATH;
 			_worker = indexer;
 		} else {
 			LOGGER.info("starting searcher node");
-			SearcherNode searcher = new SearcherNode(_cloudStorage, _config.get("searcher"));
+			SearcherNode searcher = new SearcherNode(_cloudStorage, config.get("searcher"));
 			servlet = new SearchServlet(searcher);
 			path = SearchServlet.PATH;
 			_worker = searcher;
