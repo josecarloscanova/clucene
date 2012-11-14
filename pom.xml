@@ -59,6 +59,7 @@
     <module>core</module>
     <module>siteConstructor</module>
     <module>utils</module>
+    <module>queryStresser</module>
   </modules>
   <dependencyManagement>
   	<dependencies>

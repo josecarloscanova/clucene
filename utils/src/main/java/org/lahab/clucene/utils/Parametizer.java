@@ -86,6 +86,8 @@ public class Parametizer {
 		Object val = _parameters.get(key);
 		if (val instanceof Double && val != null) {
 			return (Double) val;
+		} else if (val instanceof Integer && val != null) {
+			return ((Integer)val).doubleValue();
 		}
 		throw new ParametizerException("Invalid demand");
 	}
