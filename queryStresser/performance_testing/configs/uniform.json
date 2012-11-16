@@ -1,0 +1,11 @@
+{
+    "filename": "dataset/uniform",
+    "nbOut": 10,
+    "queryFile": "querySample.txt",
+    "nbQueries": 100000,
+    "uniform": false,
+    "gaussian": {
+        "mean": 0,
+        "stddev": 0
+    }
+}

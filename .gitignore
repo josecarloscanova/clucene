@@ -51,3 +51,7 @@ local.properties
 config.json
 config-indexer.json
 config-searcher.json
+# We ignore temporary data for the performance testing
+queryStresser/performance_testing/dataset/*
+queryStresser/performance_testing/results/*
+queryStresser/performance_testing/configs/*

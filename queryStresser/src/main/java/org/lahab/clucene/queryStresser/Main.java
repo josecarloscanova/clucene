@@ -61,20 +61,19 @@ public class Main
 		
 		_queryParser = new QueryParser(config);
 		//_queryManager = new QueryManager(config, _queryParser);
-		int nbGroup = 50;
+		int nbGroup = 1;
 		
 	    File[] files = new File[nbGroup];
         FileWriter[] writers = new FileWriter[nbGroup];
 	    for (int i = 0; i < files.length; i++) {
-	    	System.out.println(_params.getString("filename") + i + ".csv");
-	    	files[i] = new File(_params.getString("filename") + i + ".csv");
+	    	files[i] = new File(_params.getString("filename") + "_" + i + ".csv");
 	    	files[i].createNewFile();
 	    	writers[i] = new FileWriter(files[i]);
 	    }
 	    try {
 			for (int i = _params.getInt("nbOut"); i > 0; i--) {
 				for (int j = 0; j < files.length; j++) {
-					writers[j].write(_queryParser.getQuery() + "\n");
+					writers[j].write(_queryParser.getQuery() + ";\n");
 				}
 			}
 			for (int j = 0; j < files.length; j++) {

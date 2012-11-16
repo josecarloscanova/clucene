@@ -80,9 +80,9 @@ public class QueryParser {
 		if (_uniform) { 
 			idx = _generator.nextInt(_queries.length - 1);
 		} else {
-			idx = (int) (_generator.nextGaussian() * _stddev + _mean);
-			idx = idx < 0 ? 0 : idx;
-			idx = idx >= _queries.length ? _queries.length - 1 : idx;
+			do {
+				idx = (int) (_generator.nextGaussian() * _stddev + _mean);
+			} while (idx < 0 || idx >= _queries.length);
 		}
 		return _queries[idx];
 	}
