@@ -55,3 +55,4 @@ config-searcher.json
 queryStresser/performance_testing/dataset/*
 queryStresser/performance_testing/results/*
 queryStresser/performance_testing/configs/*
+queryStresser/performance_testing/jmeter.log
