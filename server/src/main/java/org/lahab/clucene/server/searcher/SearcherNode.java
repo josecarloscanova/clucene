@@ -5,11 +5,12 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -45,10 +46,12 @@ import org.lahab.clucene.utils.Configuration;
 public class SearcherNode extends Worker {
 	public final static Logger LOGGER = Logger.getLogger(SearcherNode.class.getName());
 	
-	protected IndexSearcher _index = null;
+	protected SearcherManager _manager = null;
 	/** The directory that will write */
 	private Directory _directory;
 	private QueryParser _parser;
+	
+	protected ReaderRefresher _refresher;
 
 	protected CloudStorage _cloudStorage;
 
@@ -65,30 +68,34 @@ public class SearcherNode extends Worker {
 	    _directory = new BlobDirectoryFS(_cloudStorage.getAccount(), containerName, new RAMDirectory());
 
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
-		IndexReader reader = IndexReader.open(_directory);
-		
-		_index = new IndexSearcher(reader);
+		_manager = new SearcherManager(_directory, new SearcherFactory());
+		_refresher = new ReaderRefresher(_manager);
 		_parser = new QueryParser(Version.LUCENE_36, "content", analyzer);
 	}
 	
 	public Document[] search(String str) throws ParseException, IOException {
-		Query query = _parser.parse(str);
-		TopDocs docs = _index.search(query, 10);
-		Document[] results = new Document[docs.totalHits > 10 ? 10 : docs.totalHits];
-		for (int i = 0; i < results.length; i++) {
-			results[i] = _index.doc(docs.scoreDocs[i].doc);
+		IndexSearcher searcher = _manager.acquire();
+		Document[] results = null;
+		try {
+			Query query = _parser.parse(str);
+			TopDocs docs = searcher.search(query, 10);
+			results = new Document[docs.totalHits > 10 ? 10 : docs.totalHits];
+			for (int i = 0; i < results.length; i++) {
+				results[i] = searcher.doc(docs.scoreDocs[i].doc);
+			}
+		} finally {
+			_manager.release(searcher);
 		}
 		return results;	
 	}
 
 	public void stop() throws IOException {
-		_index.close();
+		_refresher.stop();
 		_directory.close();
 	}
 
 	public void start() throws IOException {
-		// TODO Auto-generated method stub
-		
+		_refresher.start();
 	}
 
 }

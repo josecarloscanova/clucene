@@ -46,16 +46,13 @@ public class SearchServlet extends HttpServlet {
 	
 	private SearcherNode _searcher;
 	
-	public SearchServlet(SearcherNode searcher) {
+	public SearchServlet(SearcherNode searcher) throws IOException {
 		_searcher = searcher;
+		_searcher.start();
 	}
 	
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		
-		
 		String query = URLDecoder.decode(request.getParameter("q"), "UTF-8");
-		LOGGER.info(query);
-		LOGGER.info("thread id:" + Thread.currentThread().getId());
 		if (query == null) {
 			response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
 		}
