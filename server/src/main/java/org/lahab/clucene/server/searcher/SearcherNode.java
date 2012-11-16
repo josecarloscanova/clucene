@@ -50,14 +50,16 @@ public class SearcherNode extends Worker {
 	private Directory _directory;
 	private QueryParser _parser;
 
-	private CloudStorage _cloudStorage;
+	protected CloudStorage _cloudStorage;
+
 	static {
 		DEFAULTS.put("container", "clucene");
 		DEFAULTS.put("stats", false);
 	}
 	
 	public SearcherNode(CloudStorage storage, Configuration config) throws Exception {
-		super(storage, config);
+		super(config);
+		_cloudStorage = storage;
 		String containerName = _params.getString("container");
 		_cloudStorage.addContainer("directory", containerName);
 	    _directory = new BlobDirectoryFS(_cloudStorage.getAccount(), containerName, new RAMDirectory());
@@ -71,18 +73,17 @@ public class SearcherNode extends Worker {
 	
 	public Document[] search(String str) throws ParseException, IOException {
 		Query query = _parser.parse(str);
-		LOGGER.info("Query:" + query.toString());
 		TopDocs docs = _index.search(query, 10);
-		Document[] results = new Document[10];
-		for (int i = 0; i < 10; i++) {
+		Document[] results = new Document[docs.totalHits > 10 ? 10 : docs.totalHits];
+		for (int i = 0; i < results.length; i++) {
 			results[i] = _index.doc(docs.scoreDocs[i].doc);
 		}
 		return results;	
 	}
 
-	public void stop() {
-		// TODO Auto-generated method stub
-		
+	public void stop() throws IOException {
+		_index.close();
+		_directory.close();
 	}
 
 	public void start() throws IOException {

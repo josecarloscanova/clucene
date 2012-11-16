@@ -21,6 +21,7 @@ package org.lahab.clucene.server;
  */
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
@@ -50,10 +51,17 @@ public class SearchServlet extends HttpServlet {
 	}
 	
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		
+		
+		String query = URLDecoder.decode(request.getParameter("q"), "UTF-8");
+		LOGGER.info(query);
+		LOGGER.info("thread id:" + Thread.currentThread().getId());
+		if (query == null) {
+			response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+		}
 		response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
-		JSONObject results = new JSONObject();
-		String query = request.getReader().readLine();
+        JSONObject results = new JSONObject();
         try {
         	LOGGER.info("Searching:" + query);
 			Document[] docs = _searcher.search(query);

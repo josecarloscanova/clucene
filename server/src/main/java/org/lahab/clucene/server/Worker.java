@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.lahab.clucene.utils.CloudStorage;
 import org.lahab.clucene.utils.Configuration;
 import org.lahab.clucene.utils.Parametizer;
 import org.lahab.clucene.utils.StatRecorder;
@@ -39,7 +38,7 @@ public abstract class Worker {
 		DEFAULTS.put("stats", false);
 	}
 	
-	public Worker(CloudStorage storage, Configuration config) throws Exception {
+	public Worker(Configuration config) throws Exception {
 		_params = new Parametizer(DEFAULTS, config);
 	}
 	
