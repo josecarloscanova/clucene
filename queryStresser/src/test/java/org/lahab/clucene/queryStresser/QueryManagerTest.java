@@ -20,9 +20,7 @@ package org.lahab.clucene.queryStresser;
  * #L%
  */
 
-import static org.junit.Assert.*;
 
-import org.junit.Test;
 
 public class QueryManagerTest {
 }

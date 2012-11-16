@@ -28,8 +28,6 @@ import java.util.Map;
 import org.lahab.clucene.utils.Configuration;
 import org.lahab.clucene.utils.JSONConfiguration;
 import org.lahab.clucene.utils.Parametizer;
-import org.lahab.clucene.utils.StatRecorder;
-import org.lahab.clucene.utils.Statable;
 
 /**
  * Hello world!

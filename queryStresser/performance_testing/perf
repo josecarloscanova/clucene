@@ -58,6 +58,58 @@ function analyze {
     done
 }
 
-createJSON
-generateData
-analyze
+function observe {
+    jmeter/bin/jmeter -t loadTest.jmx -Jfile.name="none" -Jpath.data=$(pwd)/"$DATA_DIR" -Jpath.result=$(pwd)/"$RESULT_DIR"
+}
+
+function usage {
+    echo "usage $1:This script aims to simplify the generation of dataset/results for clucene's search part there are different possible commands:
+    - -d <number of queries> generates a dataset using clucene's queryStresser module in that case you can provide a second integer argument to specify the number of queries will be contain in each file.
+    - -e uses jmeter and Loadosophia plugin to evaluate the performance of a clucene cluster when searching on it. it creates all the result files in the results folder
+    - -o <name of the dataset> opens jmeter with the specified dataset's results to observe the results
+"
+}
+
+d=off
+e=off
+o=off
+if [ $# -eq 0 ]; then
+    usage $0
+fi
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -d)
+            d=on
+            NBQUERY="$2"; 
+            shift;;
+        -e)
+            e=on;;
+        -o)
+            o=on
+            shift;;
+        --) shift; break;;
+        -*)
+            usage $0
+            exit 1;;
+        *)  break;;
+    esac
+    shift
+done
+
+if [ $d == "on" ]; then
+    echo "dataset"
+    createJSON
+    generateData
+fi
+
+if [ $e == "on" ]; then
+    echo "evaluate"
+    analyze
+fi
+
+if [ $o == "on" ]; then
+    echo "observe"
+    observe
+fi
