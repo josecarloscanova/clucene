@@ -24,13 +24,19 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.lahab.clucene.utils.CloudStorage;
 import org.lahab.clucene.utils.Configuration;
 import org.lahab.clucene.utils.JSONConfiguration;
 import org.lahab.clucene.utils.Parametizer;
+import org.lahab.clucene.utils.ParametizerException;
 
+import com.microsoft.windowsazure.services.blob.client.CloudBlob;
 import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
+import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
 
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.crawler.CrawlController;
@@ -50,16 +56,20 @@ public class Main {
 		DEFAULTS.put("nbCrawlers", 3);
 		DEFAULTS.put("seed", null);
 		DEFAULTS.put("azure", null);
+		DEFAULTS.put("download", false);
+		DEFAULTS.put("directory", null);
 	}
 	
 	public static Parametizer _params;
 	public static CloudStorage _cloudStorage;
 	public static volatile long size = 0;
+
+	private static ThreadPoolExecutor _pool;
 	/**
 	 * @param args
 	 * @throws Exception 
 	 */
-	public static void main(String[] args) throws Exception {		
+	public static void main(String[] args) throws Exception {
 		if (args.length != 0 ) {
 			CONFIG_FILE = args[0];
 		}
@@ -69,6 +79,30 @@ public class Main {
 		_cloudStorage.addContainer("crawler", _params.getString("container"));
 		_cloudStorage.getContainer("crawler").createIfNotExist();
 		
+		if (_params.getBoolean("download")) {
+			startDownloading();
+		} else {
+			startCrawling();
+		}
+	}
+
+	private static void startDownloading() throws ParametizerException {
+		System.out.println("start download");
+		int nb = _params.getInt("nbCrawlers");
+		_pool = new ThreadPoolExecutor(nb, nb, 0, TimeUnit.SECONDS,
+				   new ArrayBlockingQueue<Runnable>(10, false),
+				   new ThreadPoolExecutor.CallerRunsPolicy());
+		DownloadJob.DIRECTORY = _params.getString("directory");
+		for (ListBlobItem blobItem : _cloudStorage.getContainer("crawler").listBlobs()) {
+			if (blobItem instanceof CloudBlob) {
+				_pool.execute(new DownloadJob((CloudBlob)blobItem));
+			}
+		}
+		_pool.shutdown();
+		System.out.println("finished");		
+	}
+
+	private static void startCrawling() throws Exception {
 		CrawlConfig crawlConfig = new CrawlConfig();
 		crawlConfig.setPolitenessDelay(100);
 		crawlConfig.setCrawlStorageFolder(_params.getString("storageFolder"));
