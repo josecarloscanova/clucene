@@ -1,5 +1,6 @@
 package org.lahab.clucene.server.searcher;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -13,6 +14,7 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.lahab.clucene.core.BlobDirectoryFS;
@@ -58,6 +60,7 @@ public class SearcherNode extends Worker {
 	static {
 		DEFAULTS.put("container", "clucene");
 		DEFAULTS.put("stats", false);
+		DEFAULTS.put("folder", "indexCache");
 	}
 	
 	public SearcherNode(CloudStorage storage, Configuration config) throws Exception {
@@ -65,7 +68,8 @@ public class SearcherNode extends Worker {
 		_cloudStorage = storage;
 		String containerName = _params.getString("container");
 		_cloudStorage.addContainer("directory", containerName);
-	    _directory = new BlobDirectoryFS(_cloudStorage.getAccount(), containerName, new RAMDirectory());
+	    _directory = new BlobDirectoryFS(_cloudStorage.getAccount(), containerName, 
+	    								 FSDirectory.open(new File(_params.getString("folder"))));
 
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 		_manager = new SearcherManager(_directory, new SearcherFactory());
