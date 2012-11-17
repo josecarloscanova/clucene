@@ -22,6 +22,8 @@ package org.lahab.clucene.server.indexer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.logging.Logger;
 
@@ -86,20 +88,32 @@ public class PoolJobs {
 	 *
 	 */
 	class DocumentParser implements Runnable {
-		CloudBlob _blob;
+		CloudBlob _blob = null;
+		File _file = null;
 		
 		public DocumentParser(CloudBlob blobItem) {
 			_blob = blobItem;
 		}
 		
+		public DocumentParser(File blobItem) {
+			_file = blobItem;
+		}
+		
 		public void run() {
 			try {
+				InputStream is = null;
+				String name = null;
+				if (_blob != null) {
+					name = _blob.getName();
+					ByteArrayOutputStream os = new ByteArrayOutputStream();
+		        	_blob.download(os);
+	        		is = new ByteArrayInputStream(os.toByteArray());
+				} else {
+					name = _file.getName();
+					is = new FileInputStream(_file);
+				}
+				
 				Document doc = new Document();
-				ByteArrayOutputStream os = new ByteArrayOutputStream();
-		        _blob.download(os);
-	        	InputStream is = new ByteArrayInputStream(os.toByteArray());
-	        	
-	        	
 	        	Metadata metadata = new Metadata();
 	        	Parser parser = new HtmlParser();
 	        	ContentHandler handler = new BodyContentHandler(-1);
@@ -107,11 +121,11 @@ public class PoolJobs {
 	        	context.set(Parser.class, parser);
 	        	
 	        	try {
-	        		parser.parse(is, handler, metadata, context);
-	        		
+	        		parser.parse(is, handler, metadata, context);	
 	        	} finally {
 	        		is.close();
 	        	}
+	        	
 	        	LOGGER.finest("Text extracted:" + handler.toString());
 	    		doc.add(new Field("content", handler.toString(), 
 						  		  Field.Store.NO, Field.Index.ANALYZED));
@@ -120,17 +134,22 @@ public class PoolJobs {
 	    		doc.add(new Field("title", title,
 	    						  Field.Store.YES, Field.Index.ANALYZED));
 	    		
-	    		doc.add(new Field("URI", _blob.getName(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+	    		doc.add(new Field("URI", name, Field.Store.YES, Field.Index.NOT_ANALYZED));
 	    		
 	    		INDEX.queueDoc(doc);
 			} catch (Exception e) {
+				e.printStackTrace();
 				throw new RuntimeException(e);
 			}
 		}
 	}
 
-	public Runnable NEW_documentParser(CloudBlob blobItem) {
-		return new DocumentParser(blobItem);
+	public Runnable NEW_documentParser(Object blobItem) {
+		if (blobItem instanceof File) {
+			return new DocumentParser((File) blobItem);
+		} else {
+			return new DocumentParser((CloudBlob) blobItem);
+		}
 	}
 
 	public Runnable NEW_documentIndexer(Document doc) {

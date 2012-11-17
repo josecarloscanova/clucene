@@ -20,16 +20,13 @@ package org.lahab.clucene.server.indexer;
  * #L%
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.lahab.clucene.utils.CloudStorage;
 import org.lahab.clucene.utils.Configuration;
 import org.lahab.clucene.utils.Parametizer;
-
-import com.microsoft.windowsazure.services.blob.client.CloudBlob;
-import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
 
 /**
  * The point of this class is to parse an Azure blob container with wikipedia web pages in it
@@ -41,18 +38,20 @@ public class BlobParser implements Runnable {
 	protected PoolManager _pool;
 	private Thread _thread;
 	public Parametizer _params;
-	private CloudStorage _cloudStorage;
+	protected File _folder;
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
 	static {
 		// Default parameters
-		DEFAULTS.put("container", "pages");
+		DEFAULTS.put("directory", "index/files/");
 	}
 
-	public BlobParser(CloudStorage storage, PoolManager pool, Configuration config) throws Exception {
+	public BlobParser(PoolManager pool, Configuration config) throws Exception {
 		_params = new Parametizer(DEFAULTS, config);
 		_pool = pool;
-		_cloudStorage = storage;
-		storage.addContainer("pages", _params.getString("container"));
+		_folder = new File(_params.getString("directory"));
+		if (!_folder.isDirectory()) {
+			throw new Exception("the path given as directory for crawling is not a directory");
+		}
 		_thread = new Thread(this);
 	}
 
@@ -60,12 +59,13 @@ public class BlobParser implements Runnable {
 	public void run() {
 		LOGGER.info("indexer start");
 		Thread thisThread = Thread.currentThread();
-		for (ListBlobItem blobItem : _cloudStorage.getContainer("pages").listBlobs()) {
+		
+		for (File file : _folder.listFiles()) {
 			if (thisThread != _thread) {
 				break;
 			}
-			if (blobItem instanceof CloudBlob) {
-				_pool.addCrawlJob((CloudBlob)blobItem);
+			if (file.isFile()) {
+				_pool.addCrawlJob(file);
 			}
 		}
 		LOGGER.info("finished indexing all documents");

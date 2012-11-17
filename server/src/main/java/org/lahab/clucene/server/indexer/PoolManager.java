@@ -34,8 +34,6 @@ import org.lahab.clucene.utils.Parametizer;
 import org.lahab.clucene.utils.StatRecorder;
 import org.lahab.clucene.utils.Statable;
 
-import com.microsoft.windowsazure.services.blob.client.CloudBlob;
-
 /**
  * Handles each Thread pool 
  * This is where most of the indexing concurrency is encapsulated
@@ -140,7 +138,7 @@ public class PoolManager implements Statable {
 	 * Adds a crawling job
 	 * @param blobItem
 	 */
-	public void addCrawlJob(CloudBlob blobItem) {
+	public void addCrawlJob(Object blobItem) {
 		LOGGER.fine("Add Crawling job");
 		_poolCrawl.execute(_jobFactory.NEW_documentParser(blobItem));
 	}

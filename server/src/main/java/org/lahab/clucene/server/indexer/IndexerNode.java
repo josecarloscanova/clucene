@@ -59,7 +59,7 @@ public class IndexerNode extends Worker {
 	public IndexerNode(CloudStorage storage, Configuration config) throws Exception {
 		super(config);	
 		_pool = new PoolManager(config);
-		_crawler = new BlobParser(storage, _pool, config.get("crawler"));
+		_crawler = new BlobParser(_pool, config.get("crawler"));
 		_indexer = new Indexer(storage, _pool, config.get("indexer"));
 		
 		PoolJobs.INDEX = _indexer;
