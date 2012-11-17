@@ -64,10 +64,13 @@ public class Indexer implements Statable {
 	/** How many documents have been added since the indexer is opened */
 	protected volatile static int _nbAdded = 0;
 	private volatile int _nbCommit = 0;
-
+	private int _nbLastCommit = 0;
+	
 	public Parametizer _params;
 
 	private CloudStorage _cloudStorage;
+
+
 
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
 	static {
@@ -141,9 +144,15 @@ public class Indexer implements Statable {
 	}
 	
 	public void commit() throws CorruptIndexException, IOException {
-		_index.commit();
-		LOGGER.info("Commit done");
-		_nbCommit++;
+		LOGGER.info("Commit Start");
+		if (_nbLastCommit < _nbAdded) {
+			_nbLastCommit  = _nbAdded;
+			_index.commit();
+			LOGGER.info("Commit done");
+			_nbCommit++;
+		} else {
+			LOGGER.info("Commit unecessary");
+		}
 	}
 	
 	/**
