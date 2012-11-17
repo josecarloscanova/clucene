@@ -68,21 +68,6 @@ public class PoolJobs {
 	}
 	
 	/**
-	 * A job to commit the current index
-	 * @author charlymolter
-	 *
-	 */
-	class CommitIndexer implements Runnable {
-		public void run() {
-			try {
-				INDEX.commit();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		}
-	}
-	
-	/**
 	 * A job to parse and create a document
 	 * @author charlymolter
 	 *
@@ -155,10 +140,5 @@ public class PoolJobs {
 	public Runnable NEW_documentIndexer(Document doc) {
 		// TODO Auto-generated method stub
 		return new DocumentIndexer(doc);
-	}
-
-	public Runnable NEW_commitIndexer() {
-		// TODO Auto-generated method stub
-		return new CommitIndexer();
 	}
 }

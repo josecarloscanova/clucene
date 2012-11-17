@@ -81,8 +81,8 @@ public class IndexerNode extends Worker {
 	@Override
 	public void start() {
 		try {
+			_indexer.open();
 			_pool.open();
-			_indexer.open();		
 			try {
 				if (_params.getBoolean("stats")) {
 					_stats.start();

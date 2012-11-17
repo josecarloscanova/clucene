@@ -48,7 +48,7 @@ public class PoolManager implements Statable {
 	/** The pool of Indexing jobs */
 	protected ThreadPoolExecutor _poolIndex;
 	/** The commit thread if it exists */
-	protected volatile Thread _commitThread = null;
+	protected volatile CommitThread _commitThread = null;
 	protected StatRecorder _stats = null;
 	protected PoolJobs _jobFactory = new PoolJobs();
 	
@@ -59,6 +59,7 @@ public class PoolManager implements Statable {
 		DEFAULTS.put("crawler.queueSize", 10);
 		DEFAULTS.put("indexer.nbThreads", 3);
 		DEFAULTS.put("crawler.nbThreads", 3);
+		DEFAULTS.put("indexer.commitFrequency", 1000);
 	}
 	
 	public PoolManager(Configuration conf) throws Exception {
@@ -77,9 +78,10 @@ public class PoolManager implements Statable {
 			LOGGER.info("Shutting down indexer pool");
 			shutdownPool(_poolIndex);
 			LOGGER.info("Shutting down commit pool");
-			while(_commitThread.isAlive()) {
+			while(_commitThread.isCommiting()) {
 				Thread.sleep(100);
 			}
+			_commitThread.stop();
 			LOGGER.info("Shutdown finished");
 			_poolCrawl = null;
 			_poolIndex = null;
@@ -104,7 +106,8 @@ public class PoolManager implements Statable {
 		_poolIndex = new ThreadPoolExecutor(nb, nb, 0, TimeUnit.SECONDS,
 				   new ArrayBlockingQueue<Runnable>(_params.getInt("indexer.queueSize"), false),
 				   new ThreadPoolExecutor.CallerRunsPolicy());
-		_commitThread = null;
+		_commitThread = new CommitThread(_params.getInt("indexer.commitFrequency"));
+		_commitThread.start();
 	}
 	
 	/**
@@ -143,22 +146,9 @@ public class PoolManager implements Statable {
 		_poolCrawl.execute(_jobFactory.NEW_documentParser(blobItem));
 	}
 	
-	/**
-	 * Adds a commit job if no commit is already happening
-	 */
-	public void addCommitJob() {
-		if (_commitThread == null || !_commitThread.isAlive()) {
-			LOGGER.fine("Starting a new commit thread");
-			_commitThread = new Thread(_jobFactory.NEW_commitIndexer());
-			_commitThread.start();
-		} else {
-			LOGGER.fine("commit already happening ignoring");
-		}
-	}
-	
 	@Override
 	public String[] header() {
-		String[] stats = {"Size crawler Queue", "Size indexer Queue", "Commiting"};
+		String[] stats = {"Size crawler Queue", "Size indexer Queue", "isCommiting"};
 		return stats;
 	}
 
@@ -170,7 +160,7 @@ public class PoolManager implements Statable {
 		}
 		String[] stats = {String.valueOf(_poolCrawl.getQueue().size()), 
 						  String.valueOf(_poolIndex.getQueue().size()),
-						  (_commitThread != null && _commitThread.isAlive()) ? "1" : "0"};
+						  String.valueOf(_commitThread.isCommiting())};
 		return stats;
 	}
 }

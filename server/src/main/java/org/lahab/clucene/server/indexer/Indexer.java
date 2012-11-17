@@ -63,8 +63,7 @@ public class Indexer implements Statable {
 	protected PoolManager _pool;
 	/** How many documents have been added since the indexer is opened */
 	protected volatile static int _nbAdded = 0;
-	/** Number of commits since the indexer is opened */
-	protected volatile static int _nbCommited = 0;
+	private volatile int _nbCommit = 0;
 
 	public Parametizer _params;
 
@@ -73,7 +72,6 @@ public class Indexer implements Statable {
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
 	static {
 		// Default parameters
-		DEFAULTS.put("commitFrequency", 10);
 		DEFAULTS.put("regular", false);
 		DEFAULTS.put("container", "clucene");
 		DEFAULTS.put("folder", "indexCache");
@@ -128,27 +126,24 @@ public class Indexer implements Statable {
 	 */
 	public void addDoc(Document _doc) throws CorruptIndexException, IOException, ParametizerException {
 		_index.addDocument(_doc);
-		checkCommit();
+		updateStats();
 	}
 	
 	/**
 	 * Updates the stats variable and ask for a commit job if necessary
 	 * @throws ParametizerException
 	 */
-	protected synchronized void checkCommit() throws ParametizerException {
+	protected synchronized void updateStats() throws ParametizerException {
 		_nbAdded++;
 		if (_nbAdded % 100 == 0) {
 	    	LOGGER.info(_nbAdded + " Document indexed");
-	    }
-	    if (_nbAdded % _params.getInt("commitFrequency") == 0) {
-	    	LOGGER.info("Commit start");
-	    	_pool.addCommitJob();
-	    	_nbCommited++;
 	    }			
 	}
 	
 	public void commit() throws CorruptIndexException, IOException {
 		_index.commit();
+		LOGGER.info("Commit done");
+		_nbCommit++;
 	}
 	
 	/**
@@ -187,7 +182,6 @@ public class Indexer implements Statable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			_nbCommited = 0;
 			_nbAdded = 0;
 			_index = null;
 		}
@@ -203,7 +197,7 @@ public class Indexer implements Statable {
 
 	@Override
 	public String[] record() {
-		String[] stats = {String.valueOf(_nbAdded), String.valueOf(_nbCommited)};
+		String[] stats = {String.valueOf(_nbAdded), String.valueOf(_nbCommit)};
 		return stats;
 	}
 
