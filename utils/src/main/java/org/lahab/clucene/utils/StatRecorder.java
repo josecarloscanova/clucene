@@ -75,7 +75,9 @@ public class StatRecorder implements Runnable {
 			try {
 				write(String.valueOf(System.currentTimeMillis()));
 				for (Statable stat: _statable) {
-					write(stat.record());
+					if (stat != null) {
+						write(stat.record());
+					}
 				}
 				endRecord();
 				Thread.sleep(_params.getInt("frequency"));
@@ -85,6 +87,11 @@ public class StatRecorder implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
+		try {
+			_out.close();
+		} catch (IOException e) {
+			System.err.println("Can't close the file");
 		}
 	}
 	
@@ -132,11 +139,6 @@ public class StatRecorder implements Runnable {
 	}
 	
 	public void stop() {
-		try {
-			_out.close();
-		} catch (IOException e) {
-			System.err.println("Can't close the file");
-		}
 		_thread = null;
 	}
 }
