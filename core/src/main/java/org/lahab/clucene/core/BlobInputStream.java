@@ -71,12 +71,13 @@ public class BlobInputStream extends IndexInput {
 				LOGGER.finest("File too old in cache refreshing it: " + fname);
 			}
 			if (loadInCache) {
-
 				OutputStream os = directory.createCachedOutputAsStream(fname);
-				LOGGER.finer("Downloading distant version of: " + fname);
-				blob.download(os);
-				os.flush();
-				os.close();
+				try {
+					LOGGER.finer("Downloading distant version of: " + fname);
+					blob.download(os);
+				} finally {
+					os.close();
+				}
 			}
 			input = directory.getCacheDirectory().openInput(name);
 		} catch (URISyntaxException e) {
