@@ -29,6 +29,8 @@ import org.lahab.clucene.utils.Configuration;
 import org.lahab.clucene.utils.ParametizerException;
 import org.lahab.clucene.utils.Statable;
 
+import com.microsoft.windowsazure.services.core.storage.StorageException;
+
 /**
  * A worker that is in charge of the crawling and indexing of documents.
  * @author charlymolter
@@ -115,6 +117,10 @@ public class IndexerNode extends Worker {
 			System.err.println("Param stats don't exist");
 		}
 		LOGGER.info("Indexer node stopped");
+	}
+
+	public void delete() throws StorageException {
+		_indexer.delete();
 	}
 	
 }

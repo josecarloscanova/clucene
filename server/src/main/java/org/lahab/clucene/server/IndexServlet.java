@@ -31,6 +31,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.lahab.clucene.server.indexer.IndexerNode;
 
+import com.microsoft.windowsazure.services.core.storage.StorageException;
+
 /**
  * A servlet responsible of indexing
  * the different actions are:
@@ -58,8 +60,17 @@ public class IndexServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        
-        if (request.getRequestURI().equals(PATH + "/start")) {
+        if (request.getRequestURI().equals(PATH + "/delete")) {
+        	LOGGER.finer("delete");
+			try {
+				_indexer.delete();
+				response.getWriter().write("Index deleted");
+			} catch (StorageException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+        } else if (request.getRequestURI().equals(PATH + "/start")) {
         	LOGGER.finer("start");
 			_indexer.start();
 			response.getWriter().write("Indexer started");

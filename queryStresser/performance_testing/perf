@@ -4,7 +4,7 @@ CONF_DIR="configs"
 DATA_DIR="dataset"
 RESULT_DIR="results"
 JAR_FILE="../target/queryStresser-1.0-jar-with-dependencies.jar"
-NBQUERY=10
+NBQUERY=100000
 
 function createJSON {
     rm -f "$CONF_DIR"/*.json
@@ -35,7 +35,7 @@ function createJSON {
     \"nbOut\": $NBQUERY,
     \"queryFile\": \"querySample.txt\",
     \"nbQueries\": 100000,
-    \"uniform\": false,
+    \"uniform\": true,
     \"gaussian\": {
         \"mean\": 0,
         \"stddev\": 0

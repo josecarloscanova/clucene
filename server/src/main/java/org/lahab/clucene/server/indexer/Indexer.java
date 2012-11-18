@@ -46,6 +46,7 @@ import org.lahab.clucene.utils.Statable;
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlockBlob;
 import com.microsoft.windowsazure.services.blob.client.ListBlobItem;
+import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 /**
  * A wrapper to encapsulate all communication with the index writer
@@ -214,5 +215,9 @@ public class Indexer implements Statable {
 	public String[] header() {
 		String[] stats = {"nbIndex", "nbCommits"};
 		return stats;
+	}
+
+	public void delete() throws StorageException {
+		_cloudStorage.getContainer("directory").delete();
 	}
 }

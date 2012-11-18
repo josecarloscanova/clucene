@@ -9,7 +9,7 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="BASE" elementType="Argument">
             <stringProp name="Argument.name">BASE</stringProp>
-            <stringProp name="Argument.value">localhost</stringProp>
+            <stringProp name="Argument.value">indexer1.cloudapp.net</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="PORT" elementType="Argument">
@@ -19,7 +19,7 @@
           </elementProp>
           <elementProp name="THREADS" elementType="Argument">
             <stringProp name="Argument.name">THREADS</stringProp>
-            <stringProp name="Argument.value">5</stringProp>
+            <stringProp name="Argument.value">100</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="RAMPUP" elementType="Argument">
@@ -29,7 +29,7 @@
           </elementProp>
           <elementProp name="LOOP" elementType="Argument">
             <stringProp name="Argument.name">LOOP</stringProp>
-            <stringProp name="Argument.value">100</stringProp>
+            <stringProp name="Argument.value">10</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="PATH" elementType="Argument">
