@@ -68,6 +68,7 @@ public class IndexServlet extends HttpServlet {
 			} catch (StorageException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				response.getWriter().write("Index delete failed");
 			}
 			
         } else if (request.getRequestURI().equals(PATH + "/start")) {
