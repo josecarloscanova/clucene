@@ -51,6 +51,17 @@ public class SearchServlet extends HttpServlet {
 		_searcher.start();
 	}
 	
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+		try {
+			if (request.getRequestURI().equals(PATH + "/delete")) {
+				_searcher.clearCache();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String query = URLDecoder.decode(request.getParameter("q"), "UTF-8");
 		if (query == null) {

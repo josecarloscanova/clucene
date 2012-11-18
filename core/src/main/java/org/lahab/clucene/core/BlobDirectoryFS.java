@@ -60,6 +60,7 @@ public class BlobDirectoryFS extends Directory {
 		this.catalog = catalog;
 		client = storageAccount.createCloudBlobClient();
 		initCacheDirectory(cacheDirectory);
+		createContainer();
 	}
 
 	public void clearCache() throws IOException {
@@ -83,7 +84,6 @@ public class BlobDirectoryFS extends Directory {
 	protected void initCacheDirectory(Directory cacheDir) throws URISyntaxException, StorageException {
 		assert cacheDir != null;
 		cacheDirectory = cacheDir;
-		createContainer();
 	}
 	
 	public void createContainer() throws URISyntaxException, StorageException {

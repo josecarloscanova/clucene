@@ -24,8 +24,6 @@ package org.lahab.clucene.core;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.apache.lucene.store.IndexInput;
@@ -41,14 +39,12 @@ public class BlobInputStream extends IndexInput {
 	  protected String name;
 	  
 	  protected IndexInput input;
-	  protected Lock mutex = new ReentrantLock();
 	  private static final Logger LOGGER = Logger.getLogger(BlobInputStream.class.getName());
 		
 
 	public BlobInputStream(BlobDirectoryFS dir, CloudBlockBlob blob) throws IOException {
 		  try {
 			name = blob.getName();
-			mutex.lock();
 			LOGGER.fine("Opening InputStream: " + blob.getName());
 			directory = dir;
 			container = directory.getBlobContainer();
@@ -86,19 +82,14 @@ public class BlobInputStream extends IndexInput {
 		} catch (StorageException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} finally {
-            mutex.unlock();
-        }
+		}
 	  }
 	  
 	  public BlobInputStream(BlobInputStream clone) {
-		  mutex.lock();
 		  directory = clone.directory;
 		  container = clone.container;
 		  blob = clone.blob;
 		  input = (IndexInput) clone.input.clone();
-		  
-		  mutex.unlock();
 	  }
 	  
 	  @Override
@@ -140,8 +131,7 @@ public class BlobInputStream extends IndexInput {
 	  }
 	  
 	  @Override
-	  public void close() {
-		  mutex.lock();
+	  public synchronized void close() {
 		  try {
 			LOGGER.finer("Closing local input stream for " + name);
 			input.close();
@@ -152,8 +142,6 @@ public class BlobInputStream extends IndexInput {
 		  } catch (IOException e) {
 			  // TODO Auto-generated catch block
 			  e.printStackTrace();
-		  } finally {
-			  mutex.unlock();
 		  }
 	  }
 	  
@@ -163,12 +151,10 @@ public class BlobInputStream extends IndexInput {
 	  }
 	  
 	  @Override
-	  public Object clone() {
+	  public synchronized Object clone() {
 		  IndexInput clone = null;
-		  mutex.lock();
 		  clone = (IndexInput) new BlobInputStream(this);
 		  assert clone != null;
-		  mutex.unlock();
 		  return clone;
 	  }
 	  

@@ -15,7 +15,6 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.lahab.clucene.core.BlobDirectoryFS;
 import org.lahab.clucene.server.Worker;
@@ -100,6 +99,10 @@ public class SearcherNode extends Worker {
 
 	public void start() throws IOException {
 		_refresher.start();
+	}
+
+	public void clearCache() throws IOException {
+		((BlobDirectoryFS)_directory).clearCache();
 	}
 
 }

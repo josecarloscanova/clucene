@@ -24,8 +24,6 @@ package org.lahab.clucene.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.apache.lucene.store.IndexOutput;
@@ -43,10 +41,8 @@ public class BlobOutputStream extends IndexOutput {
 	protected String name;
 	  
 	protected IndexOutput output;
-	protected Lock mutex = new ReentrantLock();
 	
 	public BlobOutputStream(BlobDirectoryFS dir, CloudBlockBlob blob) {
-		mutex.lock();
 		try {
 			directory = dir;
 			container = dir.getBlobContainer();
@@ -60,8 +56,6 @@ public class BlobOutputStream extends IndexOutput {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} finally {
-			mutex.unlock();
 		}
 	}
 	
@@ -76,8 +70,7 @@ public class BlobOutputStream extends IndexOutput {
 	}
 	
 	@Override
-	public void close() {
-		mutex.lock();
+	public synchronized void close() {
 		try {
 			String fname = name;
 			output.flush();
@@ -95,8 +88,6 @@ public class BlobOutputStream extends IndexOutput {
 		} catch (StorageException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} finally {
-			mutex.unlock();
 		}
 	}
 	
