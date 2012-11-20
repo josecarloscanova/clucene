@@ -55,6 +55,7 @@ public class SearchServlet extends HttpServlet {
 		try {
 			if (request.getRequestURI().equals(PATH + "/delete")) {
 				_searcher.clearCache();
+				response.getWriter().write("clear cache\n");
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

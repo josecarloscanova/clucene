@@ -64,17 +64,17 @@ public class IndexServlet extends HttpServlet {
         	LOGGER.finer("delete");
 			try {
 				_indexer.delete();
-				response.getWriter().write("Index deleted");
+				response.getWriter().write("Index deleted\n");
 			} catch (StorageException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-				response.getWriter().write("Index delete failed");
+				response.getWriter().write("Index delete failed\n");
 			}
 			
         } else if (request.getRequestURI().equals(PATH + "/start")) {
         	LOGGER.finer("start");
 			_indexer.start();
-			response.getWriter().write("Indexer started");
+			response.getWriter().write("Indexer started\n");
         } else if (request.getRequestURI().equals(PATH + "/stop")) {
         	LOGGER.finer("stop");
         	_indexer.stop();
@@ -83,7 +83,7 @@ public class IndexServlet extends HttpServlet {
         	LOGGER.finer("pause");
         	try {
 				_indexer.wait();
-				response.getWriter().write("Indexer paused");
+				response.getWriter().write("Indexer paused\n");
         	} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -91,7 +91,7 @@ public class IndexServlet extends HttpServlet {
         } else if (request.getRequestURI().equals(PATH + "/resume")) {
         	LOGGER.finer("resume");
         	_indexer.notify();
-			response.getWriter().write("Indexer restarted");
+			response.getWriter().write("Indexer restarted\n");
         } else if (request.getRequestURI().equals(PATH + "/download")) {
         	LOGGER.finer("download");
         	try {
