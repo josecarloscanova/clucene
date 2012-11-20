@@ -78,7 +78,7 @@ public class IndexServlet extends HttpServlet {
         } else if (request.getRequestURI().equals(PATH + "/stop")) {
         	LOGGER.finer("stop");
         	_indexer.stop();
-			response.getWriter().write("Indexer shutingdown");
+			response.getWriter().write("Indexer shutingdown\n");
         }  else if (request.getRequestURI().equals(PATH + "/pause")) {
         	LOGGER.finer("pause");
         	try {
