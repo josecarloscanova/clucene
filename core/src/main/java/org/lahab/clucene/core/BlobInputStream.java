@@ -50,23 +50,7 @@ public class BlobInputStream extends IndexInput {
 			container = directory.getBlobContainer();
 			this.blob = blob;
 			String fname = name;
-			boolean loadInCache = false;
 			if (!directory.getCacheDirectory().fileExists(fname)) {
-				loadInCache = true;
-				LOGGER.finest("File doesn't exist in cache adding it: " + fname);
-			} else {
-				long cachedLength = directory.getCacheDirectory().fileLength(fname);
-				blob.downloadAttributes();
-				long blobLength = blob.getProperties().getLength();
-				long cacheLastModified = directory.getCacheDirectory().fileModified(fname);
-				
-				long lastModified = blob.getProperties().getLastModified().getTime();
-				if (cachedLength != blobLength || lastModified - cacheLastModified > 10) {
-					loadInCache = true;
-				}	
-				LOGGER.finest("File too old in cache refreshing it: " + fname);
-			}
-			if (loadInCache) {
 				OutputStream os = directory.createCachedOutputAsStream(fname);
 				try {
 					LOGGER.finer("Downloading distant version of: " + fname);
@@ -74,6 +58,7 @@ public class BlobInputStream extends IndexInput {
 				} finally {
 					os.close();
 				}
+				LOGGER.finest("File doesn't exist in cache adding it: " + fname);
 			}
 			input = directory.getCacheDirectory().openInput(name);
 		} catch (URISyntaxException e) {
