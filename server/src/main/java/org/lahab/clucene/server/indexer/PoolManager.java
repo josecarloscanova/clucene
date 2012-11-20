@@ -77,11 +77,13 @@ public class PoolManager implements Statable {
 			shutdownPool(_poolCrawl);
 			LOGGER.info("Shutting down indexer pool");
 			shutdownPool(_poolIndex);
-			LOGGER.info("Shutting down commit pool");
-			while(_commitThread.isCommiting()) {
-				Thread.sleep(100);
+			if (_commitThread != null) {
+				LOGGER.info("Shutting down commit pool");
+				while(_commitThread.isCommiting()) {
+					Thread.sleep(100);
+				}
+				_commitThread.stop();
 			}
-			_commitThread.stop();
 			LOGGER.info("Shutdown finished");
 			_poolCrawl = null;
 			_poolIndex = null;
@@ -101,13 +103,14 @@ public class PoolManager implements Statable {
 		_poolCrawl = new ThreadPoolExecutor(nb, nb, 0, TimeUnit.SECONDS,
 				   new ArrayBlockingQueue<Runnable>(_params.getInt("crawler.queueSize"), false),
 				   new ThreadPoolExecutor.CallerRunsPolicy());
-		
 		nb = _params.getInt("indexer.nbThreads");
 		_poolIndex = new ThreadPoolExecutor(nb, nb, 0, TimeUnit.SECONDS,
 				   new ArrayBlockingQueue<Runnable>(_params.getInt("indexer.queueSize"), false),
 				   new ThreadPoolExecutor.CallerRunsPolicy());
-		_commitThread = new CommitThread(_params.getInt("indexer.commitFrequency"));
-		_commitThread.start();
+		if (_params.getInt("indexer.commitFrequency") != -1) {
+			_commitThread = new CommitThread(_params.getInt("indexer.commitFrequency"));
+			_commitThread.start();
+		}
 	}
 	
 	/**
@@ -148,7 +151,7 @@ public class PoolManager implements Statable {
 	
 	@Override
 	public String[] header() {
-		String[] stats = {"Size crawler Queue", "Size indexer Queue", "isCommiting"};
+		String[] stats = {"crawlerqueue", "indexerqueue", "isCommiting"};
 		return stats;
 	}
 
@@ -160,7 +163,7 @@ public class PoolManager implements Statable {
 		}
 		String[] stats = {String.valueOf(_poolCrawl.getQueue().size()), 
 						  String.valueOf(_poolIndex.getQueue().size()),
-						  String.valueOf(_commitThread.isCommiting())};
+						  String.valueOf(_commitThread != null ? _commitThread.isCommiting() : 0)};
 		return stats;
 	}
 }

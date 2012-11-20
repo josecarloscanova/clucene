@@ -61,13 +61,16 @@ public class StatRecorder implements Runnable {
 	      System.out.println("Error creating file");
 	    }
 		_thread = new Thread(this);
+		_thread.setName("Stat recorder thread");
 	}
 	
 	@Override
 	public void run() {
 		write("time");
 		for (Statable stat: _statable) {
-			write(stat.header());
+			if (stat != null) {
+				write(stat.header());
+			}
 		}
 		endRecord();
 		Thread thisThread = Thread.currentThread();

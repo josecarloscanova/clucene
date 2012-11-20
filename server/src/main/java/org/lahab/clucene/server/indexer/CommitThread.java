@@ -33,6 +33,7 @@ public class CommitThread implements Runnable{
 	public CommitThread(int freq) {
 		_freq = freq;
 		_thread = new Thread(this);
+		_thread.setName("Commit thread");
 	}
 	
 	@Override

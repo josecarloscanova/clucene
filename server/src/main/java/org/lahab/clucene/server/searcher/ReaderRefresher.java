@@ -32,6 +32,7 @@ public class ReaderRefresher implements Runnable {
 	public ReaderRefresher(SearcherManager manager) {
 		_manager = manager;
 		_thread = new Thread(this);
+		_thread.setName("Reader refresher thread");
 	}
 	
 	@Override
