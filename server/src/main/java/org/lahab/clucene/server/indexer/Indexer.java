@@ -63,7 +63,6 @@ public class Indexer implements Statable {
 	private Directory _directory;
 	protected PoolManager _pool;
 	/** How many documents have been added since the indexer is opened */
-	protected volatile static int _nbAdded = 0;
 	private volatile int _nbCommit = 0;
 	private int _nbLastCommit = 0;
 	
@@ -130,27 +129,17 @@ public class Indexer implements Statable {
 	 */
 	public void addDoc(Document _doc) throws CorruptIndexException, IOException, ParametizerException {
 		_index.addDocument(_doc);
-		updateStats();
-	}
-	
-	/**
-	 * Updates the stats variable and ask for a commit job if necessary
-	 * @throws ParametizerException
-	 */
-	protected synchronized void updateStats() throws ParametizerException {
-		_nbAdded++;
-		if (_nbAdded % 100 == 0) {
-	    	LOGGER.info(_nbAdded + " Document indexed");
-	    }			
 	}
 	
 	public void commit() throws CorruptIndexException, IOException {
 		LOGGER.info("Commit Start");
-		if (_nbLastCommit < _nbAdded) {
-			_nbLastCommit  = _nbAdded;
+		int nbDocs = _index.maxDoc();
+		if (_nbLastCommit < nbDocs) {
+			_nbLastCommit = nbDocs;
 			_index.commit();
-			LOGGER.info("Commit done");
 			_nbCommit++;
+			LOGGER.info("Commit done");
+			
 		} else {
 			LOGGER.info("Commit unecessary");
 		}
@@ -170,6 +159,7 @@ public class Indexer implements Statable {
 		while (_index == null) {
 			try {
 				_index = new IndexWriter(_directory, configWriter);
+				_nbLastCommit = _index.maxDoc();
 			} catch (LockObtainFailedException e) {
 				System.out.println("Lock is taken trying again");
 				_directory.clearLock("write.lock");
@@ -192,7 +182,6 @@ public class Indexer implements Statable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			_nbAdded = 0;
 			_index = null;
 		}
 	}
@@ -207,13 +196,22 @@ public class Indexer implements Statable {
 
 	@Override
 	public String[] record() {
-		String[] stats = {String.valueOf(_nbAdded), String.valueOf(_nbCommit)};
-		return stats;
+		try {
+			int nbDoc = _index == null ? 0 : _index.numDocs();
+			String[] stats={String.valueOf(nbDoc), String.valueOf(_nbCommit), 
+							String.valueOf(_index == null ? 0 : _index.ramSizeInBytes())};
+			LOGGER.info("Doc added:" + nbDoc);
+			return stats;
+		} catch (IOException e){
+			e.printStackTrace();
+		}
+		return null;
+		
 	}
 
 	@Override
 	public String[] header() {
-		String[] stats = {"nbIndex", "nbCommits"};
+		String[] stats = {"nbIndex", "nbCommits", "sizeBuffer"};
 		return stats;
 	}
 
