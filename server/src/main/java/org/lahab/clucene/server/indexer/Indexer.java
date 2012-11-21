@@ -24,7 +24,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -33,6 +36,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -63,7 +67,6 @@ public class Indexer implements Statable {
 	private Directory _directory;
 	protected PoolManager _pool;
 	/** How many documents have been added since the indexer is opened */
-	private volatile int _nbCommit = 0;
 	private int _nbLastCommit = 0;
 	
 	public Parametizer _params;
@@ -79,6 +82,7 @@ public class Indexer implements Statable {
 		// Default parameters
 		DEFAULTS.put("regular", false);
 		DEFAULTS.put("container", "clucene");
+		DEFAULTS.put("bufferSize", 512.0);
 		DEFAULTS.put("folder", "indexCache");
 	}
 
@@ -139,7 +143,6 @@ public class Indexer implements Statable {
 		if (_nbLastCommit < nbDocs) {
 			_nbLastCommit = nbDocs;
 			_index.commit();
-			_nbCommit++;
 			LOGGER.info("Commit done");
 			
 		} else {
@@ -151,22 +154,22 @@ public class Indexer implements Statable {
 	 * Opens an index writer on the current directory
 	 * @throws CorruptIndexException
 	 * @throws IOException
+	 * @throws ParametizerException 
 	 */
-	public void open() throws CorruptIndexException, IOException {
+	public void open() throws CorruptIndexException, IOException, ParametizerException {
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 	    IndexWriterConfig configWriter = new IndexWriterConfig(Version.LUCENE_36, analyzer);
-	    configWriter.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+	    configWriter.setRAMBufferSizeMB(_params.getDouble("bufferSize"));
+	    configWriter.setMaxBufferedDocs(10000);
+	    configWriter.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 	    
-		// Sometimes azure refuses to give us a lock the first time so we try again
-		while (_index == null) {
-			try {
-				_index = new IndexWriter(_directory, configWriter);
-				_nbLastCommit = _index.maxDoc();
-				_close = false;
-			} catch (LockObtainFailedException e) {
-				System.out.println("Lock is taken trying again");
-				_directory.clearLock("write.lock");
-			}
+		try {
+			_index = new IndexWriter(_directory, configWriter);
+			_nbLastCommit = _index.maxDoc();
+			_close = false;
+		} catch (LockObtainFailedException e) {
+			System.out.println("Lock is taken trying again");
+			_directory.clearLock("write.lock");
 		}
 	}
 
@@ -200,11 +203,13 @@ public class Indexer implements Statable {
 	}
 
 	@Override
-	public String[] record() {
+	public Collection<? extends String> record() {
 		try {
 			int nbDoc = _close ? 0 : _index.numDocs();
-			String[] stats={String.valueOf(nbDoc), String.valueOf(_nbCommit), 
-							String.valueOf(_close ? 0 : _index.ramSizeInBytes())};
+			List<String> stats= new LinkedList<String>();
+			stats.add(String.valueOf(nbDoc));
+			stats.add(String.valueOf(SegmentInfos.getLastCommitGeneration(_directory)));
+			stats.add(String.valueOf(_close ? 0 : _index.ramSizeInBytes()));
 			LOGGER.info("Doc added:" + nbDoc);
 			return stats;
 		} catch (IOException e){
@@ -215,9 +220,12 @@ public class Indexer implements Statable {
 	}
 
 	@Override
-	public String[] header() {
-		String[] stats = {"nbIndex", "nbCommits", "sizeBuffer"};
-		return stats;
+	public Collection<? extends String> header() {
+		List<String> header = new LinkedList<String>();
+		header.add("nbIndex");
+		header.add("nbCommits");
+		header.add("sizeBuffer");
+		return header;
 	}
 
 	public void delete() throws StorageException {

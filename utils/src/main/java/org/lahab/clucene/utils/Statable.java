@@ -1,5 +1,7 @@
 package org.lahab.clucene.utils;
 
+import java.util.Collection;
+
 /*
  * #%L
  * server
@@ -32,11 +34,11 @@ public interface Statable {
 	 * The tile of each statistic that will be recorder for the header of the file
 	 * @return
 	 */
-	String[] header();
+	Collection<? extends String> header();
 	
 	/** 
 	 * This method should return a vector of stats that should be recorded in the stat file 
 	 * 
 	 */
-	String[] record();
+	Collection<? extends String> record();
 }

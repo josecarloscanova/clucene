@@ -26,6 +26,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,23 +68,24 @@ public class StatRecorder implements Runnable {
 	
 	@Override
 	public void run() {
-		write("time");
+		List<String> res = new LinkedList<String>();
 		for (Statable stat: _statable) {
 			if (stat != null) {
-				write(stat.header());
+				res.addAll(stat.header());
 			}
 		}
-		endRecord();
+		write("time", res);
 		Thread thisThread = Thread.currentThread();
 		while (thisThread == _thread) {	
+			res.clear();
 			try {
-				write(String.valueOf(System.currentTimeMillis()));
+				
 				for (Statable stat: _statable) {
 					if (stat != null) {
-						write(stat.record());
+						res.addAll(stat.record());
 					}
 				}
-				endRecord();
+				write(String.valueOf(System.currentTimeMillis()), res);
 				Thread.sleep(_params.getInt("frequency"));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -97,44 +100,26 @@ public class StatRecorder implements Runnable {
 			System.err.println("Can't close the file");
 		}
 	}
-	
-	/**
-	 * Does what you have to do at the end of one list of stats
-	 * by default it writes a end of line
-	 */
-	protected void endRecord() {
-		try {
-			_out.write("\n");
-		} catch (IOException e) {
-			System.err.println("Can't write to stat file");
-		}
-	}
 
 	/**
 	 * Write an element with its separator
 	 * by default ";" for csv
 	 * @param elt
 	 */
-	protected void write(String elt) {
+	protected void write(String time, List<String> data) {
 		try {
-			_out.write(elt + ";");
+			String res = createData(time);
+			for (String elt : data) {
+				res += createData(elt);
+			}
+			_out.write(res + "\n");
 		} catch (IOException e) {
 			System.err.println("Can't write to stat file");
 		}
 	}
 
-	/**
-	 * Write to the file the new data
-	 * @param record
-	 * @throws IOException
-	 */
-	protected void write(String[] record) {
-		if (record == null) {
-			return;
-		}
-		for (String elt : record) {
-			write(elt);
-		}	
+	private static String createData(String time) {
+		return time + ";";
 	}
 
 	public void start() {

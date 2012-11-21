@@ -20,7 +20,10 @@ package org.lahab.clucene.server.indexer;
  * #L%
  */
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -150,20 +153,26 @@ public class PoolManager implements Statable {
 	}
 	
 	@Override
-	public String[] header() {
-		String[] stats = {"crawlerqueue", "indexerqueue", "isCommiting"};
-		return stats;
+	public Collection<? extends String> header() {
+		List<String> data = new LinkedList<String>();
+		data.add("crawlerqueue");
+		data.add("indexerqueue");
+		data.add("isCommiting");
+		return data;
 	}
 
 	@Override
-	public String[] record() {
+	public Collection<? extends String> record() {
+		List<String> data = new LinkedList<String>();
 		if (_poolCrawl == null || _poolIndex == null) {
-			String[] stats = {"", "", "0"};
-			return stats;
+			data.add("");
+			data.add("");
+			data.add("");
+			return data;
 		}
-		String[] stats = {String.valueOf(_poolCrawl.getQueue().size()), 
-						  String.valueOf(_poolIndex.getQueue().size()),
-						  String.valueOf(_commitThread != null ? _commitThread.isCommiting() : 0)};
-		return stats;
+		data.add(String.valueOf(_poolCrawl.getQueue().size()));
+		data.add(String.valueOf(_poolIndex.getQueue().size()));
+		data.add(String.valueOf(_commitThread != null ? _commitThread.isCommiting() : 0));
+		return data;
 	}
 }

@@ -20,6 +20,7 @@ package org.lahab.clucene.queryStresser;
  * #L%
  */
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -65,9 +66,11 @@ public class QueryManager extends Thread implements Statable {
 	}
 
 	@Override
-	public String[] header() {
+	public Collection<? extends String> header() {
+		/*
 		String[] stats = {"nbQuery", "cumulatedTime", "avgTime", "avgTimeLastInterval"};
-		return stats;
+		return stats;*/
+		return null;
 	}
 	
 	public synchronized void addStat(long time) {
@@ -76,8 +79,8 @@ public class QueryManager extends Thread implements Statable {
 	}
 
 	@Override
-	public synchronized String[] record() {
-		_cumulatedTime += _recentTime;
+	public synchronized Collection<? extends String> record() {
+		/*_cumulatedTime += _recentTime;
 		_nbQueryExecuted += _recentNbQuery;
 		double avgTime = (_nbQueryExecuted != 0) ? _cumulatedTime / _nbQueryExecuted : 0;
 		double avgLastIntervalTime = (_recentNbQuery != 0) ? _recentTime / (_recentNbQuery): 0;
@@ -85,7 +88,8 @@ public class QueryManager extends Thread implements Statable {
 						  String.valueOf(avgTime), String.valueOf(avgLastIntervalTime)};
 		_recentNbQuery = 0;
 		_recentTime = 0;
-		return stats;
+		return stats;*/
+		return null;
 	}
 
 	public void start() {
