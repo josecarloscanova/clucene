@@ -27,14 +27,17 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.logging.Logger;
 
+import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.HTMLElementName;
+import net.htmlparser.jericho.Source;
+import net.htmlparser.jericho.StartTag;
+import net.htmlparser.jericho.TextExtractor;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.Parser;
-import org.apache.tika.parser.html.HtmlParser;
-import org.apache.tika.sax.BodyContentHandler;
+import org.w3c.dom.html.HTMLElement;
 import org.xml.sax.ContentHandler;
+
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlob;
 
@@ -97,26 +100,18 @@ public class PoolJobs {
 					name = _file.getName();
 					is = new FileInputStream(_file);
 				}
-				
+				Source source=new Source(is);
+				source.fullSequentialParse();
+
+				Element title = source.getFirstElement(HTMLElementName.TITLE);
+				Element bodyContent = source.getElementById("content");
 				Document doc = new Document();
-	        	Metadata metadata = new Metadata();
-	        	Parser parser = new HtmlParser();
-	        	ContentHandler handler = new BodyContentHandler(-1);
-	        	ParseContext context = new ParseContext();
-	        	context.set(Parser.class, parser);
+
+	        	is.close();
 	        	
-	        	try {
-	        		parser.parse(is, handler, metadata, context);	
-	        	} finally {
-	        		is.close();
-	        	}
-	        	
-	        	LOGGER.finest("Text extracted:" + handler.toString());
-	    		doc.add(new Field("content", handler.toString(), 
+	        	doc.add(new Field("content", new TextExtractor(bodyContent.getContent()).toString(), 
 						  		  Field.Store.NO, Field.Index.ANALYZED));
-	    		String title = metadata.get("title");
-	        	LOGGER.finer("Title extracted:" + title);			
-	    		doc.add(new Field("title", title,
+	        	doc.add(new Field("title", new TextExtractor(title.getContent()).toString(),
 	    						  Field.Store.YES, Field.Index.ANALYZED));
 	    		
 	    		doc.add(new Field("URI", name, Field.Store.YES, Field.Index.NOT_ANALYZED));
