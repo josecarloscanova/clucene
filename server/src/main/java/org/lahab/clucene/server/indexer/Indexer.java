@@ -70,6 +70,8 @@ public class Indexer implements Statable {
 
 	private CloudStorage _cloudStorage;
 
+	private boolean _close = true;
+
 
 
 	private static Map<String, Object> DEFAULTS = new HashMap<String, Object>();
@@ -160,6 +162,7 @@ public class Indexer implements Statable {
 			try {
 				_index = new IndexWriter(_directory, configWriter);
 				_nbLastCommit = _index.maxDoc();
+				_close = false;
 			} catch (LockObtainFailedException e) {
 				System.out.println("Lock is taken trying again");
 				_directory.clearLock("write.lock");
@@ -173,7 +176,9 @@ public class Indexer implements Statable {
 	public void close() {
 		if (_index != null) {
 			try {
+				_close  = true;
 				_index.close();
+				_index = null;
 				_directory.close();
 			} catch (CorruptIndexException e) {
 				// TODO Auto-generated catch block
@@ -182,7 +187,7 @@ public class Indexer implements Statable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			_index = null;
+			
 		}
 	}
 	
@@ -197,9 +202,9 @@ public class Indexer implements Statable {
 	@Override
 	public String[] record() {
 		try {
-			int nbDoc = _index == null ? 0 : _index.numDocs();
+			int nbDoc = _close ? 0 : _index.numDocs();
 			String[] stats={String.valueOf(nbDoc), String.valueOf(_nbCommit), 
-							String.valueOf(_index == null ? 0 : _index.ramSizeInBytes())};
+							String.valueOf(_close ? 0 : _index.ramSizeInBytes())};
 			LOGGER.info("Doc added:" + nbDoc);
 			return stats;
 		} catch (IOException e){
