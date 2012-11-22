@@ -160,7 +160,7 @@ public class Indexer implements Statable {
 		StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
 	    IndexWriterConfig configWriter = new IndexWriterConfig(Version.LUCENE_36, analyzer);
 	    configWriter.setRAMBufferSizeMB(_params.getDouble("bufferSize"));
-	    configWriter.setMaxBufferedDocs(10000);
+	    configWriter.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 	    configWriter.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 	    
 		try {
