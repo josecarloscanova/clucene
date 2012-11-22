@@ -47,10 +47,6 @@
       <version>2.4</version>
       <classifier>jdk15</classifier>
     </dependency>
-    <dependency>
-			<groupId>net.htmlparser.jericho</groupId>
-			<artifactId>jericho-html</artifactId>
-		</dependency>
   </dependencies>
   <build>
 	  <plugins>

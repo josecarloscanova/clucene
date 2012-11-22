@@ -21,10 +21,17 @@ package org.lahab.clucene.siteConstructor;
  */
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URISyntaxException;
+import java.util.Random;
+
+import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.HTMLElementName;
+import net.htmlparser.jericho.Source;
+import net.htmlparser.jericho.TextExtractor;
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlob;
 import com.microsoft.windowsazure.services.core.storage.StorageException;
@@ -41,13 +48,31 @@ public class DownloadJob implements Runnable {
 	@Override
 	public void run() {
         try {
-        	File f = new File(DIRECTORY + _blob.getName() + ".html");
+			File f = new File(DIRECTORY + _blob.getName() + ".txt");
         	if (f.exists()) {
         		f.delete();
         	}
-        	OutputStream os = new FileOutputStream(f);
+        	File ftmp = new File(new Random().nextInt() + "f");
+        	FileOutputStream os = new FileOutputStream(ftmp);
+        	
+        	System.out.println("downloading" + _blob.getName());
 			_blob.download(os);
 			os.close();
+			FileInputStream is = new FileInputStream(ftmp);
+			Source source=new Source(is);
+			source.fullSequentialParse();
+
+			Element titleContent = source.getFirstElement(HTMLElementName.TITLE);
+			Element bodyContent = source.getElementById("content");
+			TextExtractor body = new TextExtractor(bodyContent.getContent());
+			TextExtractor title = new TextExtractor(titleContent.getContent());
+			is.close();
+			ftmp.delete(); 
+			System.out.println(title.toString());
+        	FileWriter writer = new FileWriter(f);
+        	writer.write(title + "\n");
+        	writer.write(body + "\n");
+        	writer.close();
 		} catch (StorageException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

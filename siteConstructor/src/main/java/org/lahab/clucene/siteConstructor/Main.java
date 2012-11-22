@@ -78,7 +78,6 @@ public class Main {
 		_cloudStorage = new CloudStorage(config.get("azure"));
 		_cloudStorage.addContainer("crawler", _params.getString("container"));
 		_cloudStorage.getContainer("crawler").createIfNotExist();
-		
 		if (_params.getBoolean("download")) {
 			startDownloading();
 		} else {

@@ -20,23 +20,13 @@ package org.lahab.clucene.server.indexer;
  * #L%
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.FileReader;
 import java.util.logging.Logger;
-
-import net.htmlparser.jericho.Element;
-import net.htmlparser.jericho.HTMLElementName;
-import net.htmlparser.jericho.Source;
-import net.htmlparser.jericho.StartTag;
-import net.htmlparser.jericho.TextExtractor;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.w3c.dom.html.HTMLElement;
-import org.xml.sax.ContentHandler;
 
 
 import com.microsoft.windowsazure.services.blob.client.CloudBlob;
@@ -89,31 +79,21 @@ public class PoolJobs {
 		
 		public void run() {
 			try {
-				InputStream is = null;
-				String name = null;
-				if (_blob != null) {
-					name = _blob.getName();
-					ByteArrayOutputStream os = new ByteArrayOutputStream();
-		        	_blob.download(os);
-	        		is = new ByteArrayInputStream(os.toByteArray());
-				} else {
-					name = _file.getName();
-					is = new FileInputStream(_file);
-				}
-				Source source=new Source(is);
-				source.fullSequentialParse();
-
-				Element title = source.getFirstElement(HTMLElementName.TITLE);
-				Element bodyContent = source.getElementById("content");
+				String name = _file.getName();				
+				BufferedReader br = new BufferedReader(new FileReader(_file));
+				
 				Document doc = new Document();
 
-	        	is.close();
-	        	
-	        	doc.add(new Field("content", new TextExtractor(bodyContent.getContent()).toString(), 
-						  		  Field.Store.NO, Field.Index.ANALYZED));
-	        	doc.add(new Field("title", new TextExtractor(title.getContent()).toString(),
+	        	doc.add(new Field("title", br.readLine(),
 	    						  Field.Store.YES, Field.Index.ANALYZED));
-	    		
+	        	String content = "";
+	        	String line = null;
+	        	while ((line = br.readLine()) != null) {
+	        		content += line;
+	        	}
+	        	doc.add(new Field("content", content, 
+				  		  Field.Store.NO, Field.Index.ANALYZED));
+	        	br.close();
 	    		doc.add(new Field("URI", name, Field.Store.YES, Field.Index.NOT_ANALYZED));
 	    		
 	    		INDEX.queueDoc(doc);
