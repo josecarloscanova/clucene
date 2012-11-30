@@ -39,17 +39,22 @@
           </elementProp>
           <elementProp name="QUERY_FILE" elementType="Argument">
             <stringProp name="Argument.name">QUERY_FILE</stringProp>
-            <stringProp name="Argument.value">${__P(file.name)}</stringProp>
+            <stringProp name="Argument.value">uniform_0.csv</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="PATH_RESULTS" elementType="Argument">
             <stringProp name="Argument.name">PATH_RESULTS</stringProp>
-            <stringProp name="Argument.value">${__P(path.result)}</stringProp>
+            <stringProp name="Argument.value">/Users/charlymolter/Projet/clucene/queryStresser/performance_testing/results</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="PATH_DATA" elementType="Argument">
             <stringProp name="Argument.name">PATH_DATA</stringProp>
-            <stringProp name="Argument.value">${__P(path.data)}</stringProp>
+            <stringProp name="Argument.value">/Users/charlymolter/Projet/clucene/queryStresser/performance_testing/dataset</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="TYPE" elementType="Argument">
+            <stringProp name="Argument.name">TYPE</stringProp>
+            <stringProp name="Argument.value">60s</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
         </collectionProp>
@@ -143,7 +148,7 @@
             <threadCounts>true</threadCounts>
           </value>
         </objProp>
-        <stringProp name="filename">${PATH_RESULTS}/aggrrep${QUERY_FILE}.xml</stringProp>
+        <stringProp name="filename">${PATH_RESULTS}/${TYPE}aggrrep${QUERY_FILE}.xml</stringProp>
       </ResultCollector>
       <hashTree/>
       <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
@@ -175,10 +180,8 @@
             <bytes>true</bytes>
           </value>
         </objProp>
-        <stringProp name="filename">${PATH_RESULTS}/resTree${QUERY_FILE}.xml</stringProp>
+        <stringProp name="filename">${PATH_RESULTS}/${TYPE}resTree1${QUERY_FILE}.xml</stringProp>
       </ResultCollector>
-      <hashTree/>
-      <Summariser guiclass="SummariserGui" testclass="Summariser" testname="Generate Summary Results" enabled="true"/>
       <hashTree/>
       <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Transactions per Second" enabled="true">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
@@ -209,7 +212,7 @@
             <bytes>true</bytes>
           </value>
         </objProp>
-        <stringProp name="filename">${PATH_RESULTS}/tps${QUERY_FILE}</stringProp>
+        <stringProp name="filename">${PATH_RESULTS}/${TYPE}tps${QUERY_FILE}</stringProp>
         <longProp name="interval_grouping">1000</longProp>
         <boolProp name="graph_aggregated">false</boolProp>
         <stringProp name="include_sample_labels"></stringProp>
@@ -245,7 +248,7 @@
             <bytes>true</bytes>
           </value>
         </objProp>
-        <stringProp name="filename">${PATH_RESULTS}/tt${QUERY_FILE}</stringProp>
+        <stringProp name="filename">${PATH_RESULTS}/${TYPE}tt${QUERY_FILE}</stringProp>
         <longProp name="interval_grouping">500</longProp>
         <boolProp name="graph_aggregated">false</boolProp>
         <stringProp name="include_sample_labels"></stringProp>
@@ -281,7 +284,7 @@
             <bytes>true</bytes>
           </value>
         </objProp>
-        <stringProp name="filename">${PATH_RESULTS}/rtd${QUERY_FILE}</stringProp>
+        <stringProp name="filename">${PATH_RESULTS}/${TYPE}rtd${QUERY_FILE}</stringProp>
         <longProp name="interval_grouping">100</longProp>
         <boolProp name="graph_aggregated">false</boolProp>
         <stringProp name="include_sample_labels"></stringProp>
@@ -317,7 +320,7 @@
             <bytes>true</bytes>
           </value>
         </objProp>
-        <stringProp name="filename">${PATH_RESULTS}/rtt${QUERY_FILE}</stringProp>
+        <stringProp name="filename">${PATH_RESULTS}/${TYPE}rtt${QUERY_FILE}</stringProp>
         <longProp name="interval_grouping">500</longProp>
         <boolProp name="graph_aggregated">false</boolProp>
         <stringProp name="include_sample_labels"></stringProp>
@@ -353,7 +356,7 @@
             <bytes>true</bytes>
           </value>
         </objProp>
-        <stringProp name="filename">${PATH_RESULTS}/rtot${QUERY_FILE}</stringProp>
+        <stringProp name="filename">${PATH_RESULTS}/${TYPE}rtot${QUERY_FILE}</stringProp>
         <longProp name="interval_grouping">500</longProp>
         <boolProp name="graph_aggregated">false</boolProp>
         <stringProp name="include_sample_labels"></stringProp>
