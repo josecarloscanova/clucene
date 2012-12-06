@@ -160,8 +160,7 @@
         <stringProp name="filename"></stringProp>
         <stringProp name="filePrefix">${TYPE}${SAMPLE}${QUERY_FILE}</stringProp>
         <stringProp name="project">clucene</stringProp>
-        <stringProp name="uploadToken">qONBfPb85HnkkKWaKJb0m9hiAcwrY9JBDI+MEdNONHFSIbluiDthfRXmrbWigvtZUZWdAvKI2m2v9Z8G4nccgakIU7kmorQu6MlYV1Mqddod8OglwHzBMZFyBt9I3vhEXxKLb2qOtuklcw/7CyXb2O/ls3/nZbjtA05vmE0YNS4=
-</stringProp>
+        <stringProp name="uploadToken">ADD YOUR TOKEN HERE</stringProp>
         <stringProp name="uploaderURI">https://loadosophia.org/uploader/</stringProp>
         <stringProp name="storeDir">/Users/charlymolter/Desktop/loadosophia</stringProp>
       </kg.apc.jmeter.reporters.LoadosophiaUploader>
