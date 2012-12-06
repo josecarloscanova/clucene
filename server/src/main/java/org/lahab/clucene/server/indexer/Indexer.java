@@ -226,6 +226,7 @@ public class Indexer implements Statable {
 		header.add("nbCommits");
 		header.add("sizeBuffer");
 		return header;
+		
 	}
 
 	public void delete() throws StorageException {

@@ -44,6 +44,7 @@ public class NodeMain {
 	
 	public static String CONFIG_FILE = "config.json";
 	public static Worker _worker;
+	public static HttpServlet _servlet;
 	public static Server _server;
 	public static CloudStorage _cloudStorage;
 	
@@ -61,8 +62,6 @@ public class NodeMain {
 			CONFIG_FILE = args[0];
 		}
 		Configuration config = new JSONConfiguration(CONFIG_FILE);
-
-		HttpServlet servlet = null;
 		String path = null;
 
 		_params = new Parametizer(DEFAULTS, config);		
@@ -78,13 +77,13 @@ public class NodeMain {
 		if (isIndexer) {
 			LOGGER.info("starting indexer node");
 			IndexerNode indexer = new IndexerNode(_cloudStorage, config.get("indexer"));
-			servlet = new IndexServlet(indexer);
+			_servlet = new IndexServlet(indexer);
 			path = IndexServlet.PATH;
 			_worker = indexer;
 		} else {
 			LOGGER.info("starting searcher node");
 			SearcherNode searcher = new SearcherNode(_cloudStorage, config.get("searcher"));
-			servlet = new SearchServlet(searcher);
+			_servlet = new SearchServlet(searcher);
 			path = SearchServlet.PATH;
 			_worker = searcher;
 		}
@@ -95,7 +94,7 @@ public class NodeMain {
 	    // Creates the servlet for whatever our node is up to
         ServletContextHandler contextIndex = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextIndex.setContextPath(path);
-        contextIndex.addServlet(new ServletHolder(servlet),"/*");
+        contextIndex.addServlet(new ServletHolder(_servlet),"/*");
         
         // Creates the servlet for debug purpose
         ServletContextHandler contextDebug = new ServletContextHandler(ServletContextHandler.SESSIONS);

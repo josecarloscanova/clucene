@@ -50,7 +50,7 @@ public class IndexServlet extends HttpServlet {
 	/** the path from where that servlet can joined */
 	public static final String PATH = "/_index";
 	/** Our indexer thread */
-	protected IndexerNode _indexer;
+	private IndexerNode _indexer;
 	
 	public IndexServlet(IndexerNode indexer) {
 		_indexer = indexer;
